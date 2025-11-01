@@ -3,15 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="refresh" content="30">
-    <title>Matrix CanlÄ± Mesaj Raporu</title>
+    <title>Matrix Admin - Canli Rapor</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
+        #loginScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .login-box {
+            background: white;
+            padding: 50px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            text-align: center;
+            min-width: 400px;
+        }
+        .login-box h2 { color: #333; margin: 20px 0; font-size: 24px; }
+        .login-box p { color: #666; margin-bottom: 30px; }
+        .login-box input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .login-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .login-box button {
+            width: 100%;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .login-box button:hover { background: #5568d3; }
+        .error-msg {
+            color: #f44336;
+            margin-top: 15px;
+            display: none;
+            font-weight: bold;
+        }
+        #mainContent { display: none; }
         .container { max-width: 1400px; margin: 0 auto; }
         .header {
             background: white;
@@ -21,10 +74,11 @@
             margin-bottom: 20px;
         }
         .header h1 { color: #333; margin-bottom: 10px; }
-        .live-indicator {
+        .header p { color: #666; }
+        .live-dot {
             display: inline-block;
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             background: #4CAF50;
             border-radius: 50%;
             animation: pulse 1.5s infinite;
@@ -32,7 +86,7 @@
         }
         @keyframes pulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            50% { opacity: 0.3; }
         }
         .stats {
             display: grid;
@@ -42,148 +96,581 @@
         }
         .stat-card {
             background: white;
-            padding: 20px;
+            padding: 25px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             text-align: center;
         }
         .stat-card h3 { color: #666; font-size: 14px; margin-bottom: 10px; }
-        .stat-card .value { font-size: 32px; font-weight: bold; color: #667eea; }
-        .messages-container {
+        .stat-card .value { font-size: 36px; font-weight: bold; color: #667eea; }
+        .messages {
             background: white;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
+        .messages h2 { color: #333; margin-bottom: 15px; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         thead { background: #667eea; color: white; }
-        th { padding: 12px; text-align: left; }
+        th { padding: 12px; text-align: left; font-weight: 600; }
         td { padding: 12px; border-bottom: 1px solid #f0f0f0; }
         tr:hover { background: #f8f9fa; }
         .sender { color: #2196F3; font-weight: bold; }
         .timestamp { color: #999; font-size: 12px; }
-        .room-name { color: #FF9800; }
-        .update-time { color: #4CAF50; font-weight: bold; }
+        .room { color: #FF9800; font-size: 11px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>
-                <span class="live-indicator"></span>
-                ğŸ“Š Matrix CanlÄ± Mesaj Raporu
-            </h1>
-            <p>Otomatik gÃ¼ncelleme: Her 30 saniyede | Son gÃ¼ncelleme: <span class="update-time">01.11.2025 22:16:07</span></p>
-        </div>
-        
-        <div class="stats">
-            <div class="stat-card">
-                <h3>Toplam Mesaj</h3>
-                <div class="value">15</div>
-            </div>
-            <div class="stat-card">
-                <h3>Benzersiz KullanÄ±cÄ±</h3>
-                <div class="value">3</div>
-            </div>
-            <div class="stat-card">
-                <h3>Benzersiz Oda</h3>
-                <div class="value">6</div>
-            </div>
-            <div class="stat-card">
-                <h3>GÃ¼ncelleme</h3>
-                <div class="value" style="font-size: 18px;">#4</div>
-            </div>
-        </div>
-        
-        <div class="messages-container">
-            <h2>ğŸ’¬ Mesajlar (Son 100)</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Tarih/Saat</th>
-                        <th>GÃ¶nderen</th>
-                        <th>Oda</th>
-                        <th>Mesaj</th>
-                    </tr>
-                </thead>
-                <tbody>                    <tr>
-                        <td class="timestamp">2025-11-01 19:15:14+00</td>
-                        <td class="sender">@1k:localhost</td>
-                        <td class="room-name">test11</td>
-                        <td>deneme12</td>
-                    </tr>                    <tr>
-                        <td class="timestamp">2025-11-01 19:14:11+00</td>
-                        <td class="sender">@2k:localhost</td>
-                        <td class="room-name">test11</td>
-                        <td>222222222222222</td>
-                    </tr>                    <tr>
-                        <td class="timestamp">2025-11-01 19:14:07+00</td>
-                        <td class="sender">@1k:localhost</td>
-                        <td class="room-name">test11</td>
-                        <td>111111111111111111111</td>
-                    </tr>                    <tr>
-                        <td class="timestamp">2025-11-01 18:57:58+00</td>
-                        <td class="sender">@2k:localhost</td>
-                        <td class="room-name">11717</td>
-                        <td>1323123</td>
-                    </tr>                    <tr>
-                        <td class="timestamp">2025-11-01 18:43:00+00</td>
-                        <td class="sender">@2k:localhost</td>
-                        <td class="room-name">5555</td>
-                        <td>12312312</td>
-                    </tr>                    <tr>
-                        <td class="timestamp">2025-11-01 18:39:09+00</td>
-                        <td class="sender">@1k:localhost</td>
-                        <td class="room-name">16161616</td>
-                        <td>213123132</td>
-                    </tr>                    <tr>
-                        <td class="timestamp">2025-11-01 18:07:40+00</td>
-                        <td class="sender">@2k:localhost</td>
-                        <td class="room-name">test11</td>
-                        <td>123333333333333</td>
-                    </tr>                    <tr>
-                        <td class="timestamp">2025-10-31 19:17:34+00</td>
-                        <td class="sender">@2k:localhost</td>
-                        <td class="room-name">s─▒fre</td>
-                        <td>1111,</td>
-                    </tr>                    <tr>
-                        <td class="timestamp">2025-10-31 19:15:52+00</td>
-                        <td class="sender">@2k:localhost</td>
-                        <td class="room-name">s─▒fre</td>
-                        <td>ssssssss</td>
-                    </tr>                    <tr>
-                        <td class="timestamp">2025-10-31 19:15:48+00</td>
-                        <td class="sender">@2k:localhost</td>
-                        <td class="room-name">2ss</td>
-                        <td>123132</td>
-                    </tr>                    <tr>
-                        <td class="timestamp">2025-10-31 19:14:02+00</td>
-                        <td class="sender">@admin:localhost</td>
-                        <td class="room-name">2ss</td>
-                        <td>asssss</td>
-                    </tr>                    <tr>
-                        <td class="timestamp">2025-10-31 19:06:21+00</td>
-                        <td class="sender">@2k:localhost</td>
-                        <td class="room-name">2ss</td>
-                        <td>asdddddddddd</td>
-                    </tr>                    <tr>
-                        <td class="timestamp">2025-10-31 19:06:17+00</td>
-                        <td class="sender">@admin:localhost</td>
-                        <td class="room-name">2ss</td>
-                        <td>1111111111111111111111</td>
-                    </tr>                    <tr>
-                        <td class="timestamp">2025-10-31 18:37:56+00</td>
-                        <td class="sender">@2k:localhost</td>
-                        <td class="room-name">s─▒fre</td>
-                        <td>asdasd</td>
-                    </tr>                    <tr>
-                        <td class="timestamp">2025-10-31 18:37:54+00</td>
-                        <td class="sender">@2k:localhost</td>
-                        <td class="room-name">s─▒fre</td>
-                        <td>asdasda</td>
-                    </tr>                </tbody>
-            </table>
+    <div id="loginScreen">
+        <div class="login-box">
+            <div style="font-size: 72px; margin-bottom: 20px;">&#128274;</div>
+            <h2>Admin Girisi</h2>
+            <p>Mesaj raporunu goruntuleme yetkiniz gerekli</p>
+            <input type="password" id="passInput" placeholder="Admin Sifresi" onkeypress="if(event.key==='Enter') login()">
+            <button onclick="login()">Giris Yap</button>
+            <div class="error-msg" id="errMsg">Yanlis sifre!</div>
         </div>
     </div>
+    
+    <div id="mainContent">
+        <div class="container">
+            <div class="header">
+                <h1><span class="live-dot"></span>Matrix Canli Mesaj Raporu</h1>
+                <p>Otomatik guncelleme: Her 30 saniye | Son: <strong>01.11.2025 23:31:10</strong></p>
+            </div>
+            
+            <div class="stats">
+                <div class="stat-card">
+                    <h3>Toplam Mesaj</h3>
+                    <div class="value">95</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Kullanici</h3>
+                    <div class="value">5</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Oda</h3>
+                    <div class="value">9</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Guncelleme</h3>
+                    <div class="value" style="font-size: 24px;">#23</div>
+                </div>
+            </div>
+            
+            <div class="messages">
+                <h2>Son 100 Mesaj</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tarih/Saat</th>
+                            <th>Gonderen</th>
+                            <th>Oda ID</th>
+                            <th>Mesaj</th>
+                        </tr>
+                    </thead>
+                    <tbody>                        <tr>
+                            <td class="timestamp">2025-11-01 20:26:56+00</td>
+                            <td class="sender">@13k:localhost</td>
+                            <td class="room">!JOecMGbtnZfLBbjvsL:localhost</td>
+                            <td>12312312123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 20:25:22+00</td>
+                            <td class="sender">@13k:localhost</td>
+                            <td class="room">!JOecMGbtnZfLBbjvsL:localhost</td>
+                            <td>1231231231</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 20:21:07+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!CQAmxEKSiSBGkjlrlu:localhost</td>
+                            <td>ananananaannaanananananna</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 20:21:03+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!CQAmxEKSiSBGkjlrlu:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 20:21:03+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!CQAmxEKSiSBGkjlrlu:localhost</td>
+                            <td>123123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 20:21:02+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!CQAmxEKSiSBGkjlrlu:localhost</td>
+                            <td>12312312</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 20:17:31+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!CQAmxEKSiSBGkjlrlu:localhost</td>
+                            <td>12</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 20:17:30+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!CQAmxEKSiSBGkjlrlu:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 20:17:30+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!CQAmxEKSiSBGkjlrlu:localhost</td>
+                            <td>132</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 20:17:29+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!CQAmxEKSiSBGkjlrlu:localhost</td>
+                            <td>12312</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 20:17:29+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!CQAmxEKSiSBGkjlrlu:localhost</td>
+                            <td>5453</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 20:17:28+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!CQAmxEKSiSBGkjlrlu:localhost</td>
+                            <td>512312</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 20:17:27+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!CQAmxEKSiSBGkjlrlu:localhost</td>
+                            <td>12312312</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 20:09:35+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!QTOOZeDogtoBHhplap:localhost</td>
+                            <td>1231232131</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 20:09:27+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!QTOOZeDogtoBHhplap:localhost</td>
+                            <td>123123123123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:58:21+00</td>
+                            <td class="sender">@4k:localhost</td>
+                            <td class="room">!vuozkNoutOvUSAzlFa:localhost</td>
+                            <td>1233333333</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:58:11+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!vuozkNoutOvUSAzlFa:localhost</td>
+                            <td>24234</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:58:10+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!vuozkNoutOvUSAzlFa:localhost</td>
+                            <td>111111111111</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:27:32+00</td>
+                            <td class="sender">@admin:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123123123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:26:41+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>asdasd</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:26:41+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>hello</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:50+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:50+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>1</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:49+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>567</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:49+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>5467</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:49+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>6t</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:48+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>234234</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:48+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:48+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:48+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>7523</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:47+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>8756</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:47+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>5</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:47+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>45634</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:46+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>53</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:46+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:46+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:46+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>132</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:45+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:45+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:45+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:45+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:44+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:23:44+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:43+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>5678</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:42+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>568</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:42+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>45</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:42+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>1235</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:41+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:41+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>513</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:40+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>45674</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:40+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>655467</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:39+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:39+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:39+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>58</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:38+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>15547</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:38+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:38+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:37+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>45</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:37+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>456</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:36+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>8</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:36+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>3234</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:36+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>2342</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:35+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>2</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:35+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>89780</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:34+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>232345</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:34+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>2</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:34+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>9</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:33+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>765476</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:33+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>5</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:32+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:22:32+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:21:31+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:21:31+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123541</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:21:30+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>51231</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:21:29+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>1221</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:21:28+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>1212</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:21:27+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>1221</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:21:26+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>161616</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:21:26+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>161616</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:21:24+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>1515151</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:15:14+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>deneme12</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:14:11+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>222222222222222</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 19:14:07+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>111111111111111111111</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 18:57:58+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!CQAmxEKSiSBGkjlrlu:localhost</td>
+                            <td>1323123</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 18:43:00+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!vqOXrAWxnGhucJDroY:localhost</td>
+                            <td>12312312</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 18:39:09+00</td>
+                            <td class="sender">@1k:localhost</td>
+                            <td class="room">!bIpAVMNMHoKVCgKxzU:localhost</td>
+                            <td>213123132</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-11-01 18:07:40+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!xVnKfrJQeMWpzdqshw:localhost</td>
+                            <td>123333333333333</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-10-31 19:17:34+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!bYatHacwSJDvYqQGKd:localhost</td>
+                            <td>1111,</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-10-31 19:15:52+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!bYatHacwSJDvYqQGKd:localhost</td>
+                            <td>ssssssss</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-10-31 19:15:48+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!yialpCWdUpKtMrQQXz:localhost</td>
+                            <td>123132</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-10-31 19:14:02+00</td>
+                            <td class="sender">@admin:localhost</td>
+                            <td class="room">!yialpCWdUpKtMrQQXz:localhost</td>
+                            <td>asssss</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-10-31 19:06:21+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!yialpCWdUpKtMrQQXz:localhost</td>
+                            <td>asdddddddddd</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-10-31 19:06:17+00</td>
+                            <td class="sender">@admin:localhost</td>
+                            <td class="room">!yialpCWdUpKtMrQQXz:localhost</td>
+                            <td>1111111111111111111111</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-10-31 18:37:56+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!bYatHacwSJDvYqQGKd:localhost</td>
+                            <td>asdasd</td>
+                        </tr>                        <tr>
+                            <td class="timestamp">2025-10-31 18:37:54+00</td>
+                            <td class="sender">@2k:localhost</td>
+                            <td class="room">!bYatHacwSJDvYqQGKd:localhost</td>
+                            <td>asdasda</td>
+                        </tr>                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const PASS = 'Admin@2024!Guclu';
+        function login() {
+            const input = document.getElementById('passInput').value;
+            if (input === PASS) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                sessionStorage.setItem('auth', 'ok');
+            } else {
+                document.getElementById('errMsg').style.display = 'block';
+                document.getElementById('passInput').value = '';
+            }
+        }
+        window.onload = function() {
+            if (sessionStorage.getItem('auth') === 'ok') {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+            } else {
+                document.getElementById('passInput').focus();
+            }
+        };
+    </script>
 </body>
 </html>
