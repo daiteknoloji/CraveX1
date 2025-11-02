@@ -73,6 +73,9 @@ media_store/
 # www/element-web/webapp/
 # www/admin/dist/
 
+# Element-web submodules (causing Netlify issues)
+www/element-web/tree-sitter-javascript/
+
 # JSON exports
 *messages*.json
 *room*.json
