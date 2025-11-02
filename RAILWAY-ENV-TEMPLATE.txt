@@ -1,0 +1,65 @@
+# ===============================================
+# RAILWAY ENVIRONMENT VARIABLES TEMPLATE
+# ===============================================
+# Bu dosyayı Railway dashboard'da kullanacaksınız
+# Her servis için gerekli environment variables
+
+# ===============================================
+# SERVICE 1: PostgreSQL (Railway Native Service)
+# ===============================================
+# Railway otomatik oluşturur, manuel ayar gerekmez
+# Otomatik oluşan değişkenler:
+# - PGHOST
+# - PGPORT  
+# - PGUSER
+# - PGPASSWORD
+# - PGDATABASE
+# - DATABASE_URL
+
+
+# ===============================================
+# SERVICE 2: Matrix Synapse
+# ===============================================
+
+# PostgreSQL bağlantı bilgileri (Railway otomatik inject eder)
+POSTGRES_HOST=${{Postgres.PGHOST}}
+POSTGRES_PORT=${{Postgres.PGPORT}}
+POSTGRES_USER=${{Postgres.PGUSER}}
+POSTGRES_PASSWORD=${{Postgres.PGPASSWORD}}
+POSTGRES_DB=${{Postgres.PGDATABASE}}
+
+# Synapse ayarları
+SYNAPSE_SERVER_NAME=${{RAILWAY_PUBLIC_DOMAIN}}
+WEB_CLIENT_LOCATION=https://your-element-web.netlify.app
+
+# Güvenlik (değiştirin!)
+REGISTRATION_SHARED_SECRET=GizliKayitAnahtari123456789_CHANGE_THIS
+MACAROON_SECRET_KEY=MacaroonGizliAnahtar987654321_CHANGE_THIS
+FORM_SECRET=FormGizliAnahtar123456789_CHANGE_THIS
+
+
+# ===============================================
+# SERVICE 3: Admin Panel (Port 9000)
+# ===============================================
+
+# PostgreSQL bağlantı (shared from Postgres service)
+PGHOST=${{Postgres.PGHOST}}
+PGPORT=${{Postgres.PGPORT}}
+PGUSER=${{Postgres.PGUSER}}
+PGPASSWORD=${{Postgres.PGPASSWORD}}
+PGDATABASE=${{Postgres.PGDATABASE}}
+
+# Flask ayarları
+PORT=9000
+FLASK_ENV=production
+
+
+# ===============================================
+# NOTLAR
+# ===============================================
+# 1. Railway'de her satırı Variables sekmesine ayrı ayrı ekleyin
+# 2. ${{ServiceName.VARIABLE}} syntax'ı Railway'de otomatik referans oluşturur
+# 3. SYNAPSE_SERVER_NAME için ${{RAILWAY_PUBLIC_DOMAIN}} kullanın (otomatik)
+# 4. WEB_CLIENT_LOCATION'ı Netlify deploy'dan sonra güncelleyin
+# 5. Tüm SECRET değerlerini mutlaka değiştirin!
+

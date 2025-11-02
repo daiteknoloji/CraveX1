@@ -1,0 +1,5 @@
+{
+  "restrictBaseUrl": "https://YOUR-SYNAPSE-DOMAIN.up.railway.app",
+  "asManagedUsers": false
+}
+
