@@ -52,7 +52,7 @@ enable_metrics: false
 report_stats: false
 
 ## API Configuration ##
-room_invite_state_types:
+room_prejoin_state:
   - "m.room.join_rules"
   - "m.room.canonical_alias"
   - "m.room.avatar"
@@ -64,6 +64,7 @@ app_service_config_files: []
 signing_key_path: "/data/signing.key"
 trusted_key_servers:
   - server_name: "matrix.org"
+suppress_key_server_warning: true
 
 ## CORS - Synapse Admin UI için ##
 # Bu ayarlar web_client_location ile otomatik ayarlanır
@@ -82,10 +83,12 @@ password_config:
   enabled: true
   localdb_enabled: true
   pepper: "CHANGE_THIS_PEPPER"
+  
+## Password reset (disabled - no email configured) ##
+enable_password_reset: false
 
-## Email (opsiyonel) ##
-email:
-  enable_notifs: false
+## Email (disabled for Railway) ##
+# Email notifications disabled - no SMTP server configured
 
 ## Ratelimiting ##
 rc_message:
