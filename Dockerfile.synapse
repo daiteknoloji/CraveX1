@@ -1,0 +1,14 @@
+# Railway Matrix Synapse Dockerfile
+FROM matrixdotorg/synapse:latest
+
+# Config dosyasını kopyala
+COPY synapse-railway-config/homeserver.yaml /config/homeserver.yaml
+
+# Başlangıç scripti
+COPY synapse-railway-config/start.sh /start.sh
+RUN chmod +x /start.sh
+
+EXPOSE 8008
+
+CMD ["/start.sh"]
+

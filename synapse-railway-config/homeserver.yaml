@@ -1,0 +1,122 @@
+## Server ##
+server_name: "matrix-synapse-production.up.railway.app"
+pid_file: /data/homeserver.pid
+public_baseurl: "https://matrix-synapse-production.up.railway.app/"
+web_client_location: "https://synapse-admin-ui-production.up.railway.app"
+serve_server_wellknown: true
+
+## Ports ##
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    bind_addresses: ['0.0.0.0']
+
+    resources:
+      - names: [client, federation]
+        compress: false
+
+## Database ##
+database:
+  name: psycopg2
+  args:
+    user: postgres
+    password: changeme
+    database: railway
+    host: localhost
+    port: 5432
+    cp_min: 5
+    cp_max: 10
+
+## Logging ##
+log_config: "/data/log.config"
+
+## Media Store ##
+media_store_path: "/data/media_store"
+max_upload_size: 50M
+max_image_pixels: 32M
+dynamic_thumbnails: true
+
+## Captcha ##
+enable_registration_captcha: false
+
+## Registration ##
+enable_registration: true
+enable_registration_without_verification: true
+registration_shared_secret: "CHANGE_THIS_TO_RANDOM_STRING"
+allow_guest_access: false
+
+## Metrics ##
+enable_metrics: false
+report_stats: false
+
+## API Configuration ##
+room_invite_state_types:
+  - "m.room.join_rules"
+  - "m.room.canonical_alias"
+  - "m.room.avatar"
+  - "m.room.name"
+
+app_service_config_files: []
+
+## Signing Keys ##
+signing_key_path: "/data/signing.key"
+trusted_key_servers:
+  - server_name: "matrix.org"
+
+## CORS - Synapse Admin UI için ##
+# Bu ayarlar web_client_location ile otomatik ayarlanır
+# Ekstra CORS gerekirse burayı düzenleyin
+
+## Redis (opsiyonel) ##
+# redis:
+#   enabled: false
+
+## Push ##
+push:
+  include_content: true
+
+## Password ##
+password_config:
+  enabled: true
+  localdb_enabled: true
+  pepper: "CHANGE_THIS_PEPPER"
+
+## Email (opsiyonel) ##
+email:
+  enable_notifs: false
+
+## Ratelimiting ##
+rc_message:
+  per_second: 10
+  burst_count: 50
+
+rc_registration:
+  per_second: 0.17
+  burst_count: 3
+
+rc_login:
+  address:
+    per_second: 0.17
+    burst_count: 3
+  account:
+    per_second: 0.17
+    burst_count: 3
+  failed_attempts:
+    per_second: 0.17
+    burst_count: 3
+
+## Federation ##
+federation_domain_whitelist: []
+federation_metrics_domains: []
+
+## Retention ##
+retention:
+  enabled: false
+
+## User Directory ##
+user_directory:
+  enabled: true
+  search_all_users: true
+
