@@ -1,8 +1,8 @@
 {
     "default_server_config": {
         "m.homeserver": {
-            "base_url": "https://matrix-synapse-production.up.railway.app",
-            "server_name": "matrix-synapse-production.up.railway.app"
+            "base_url": "https://cravex1-production.up.railway.app",
+            "server_name": "cravex1-production.up.railway.app"
         }
     },
     "disable_custom_urls": false,
@@ -21,9 +21,10 @@
     "default_country_code": "TR",
     "show_labs_settings": false,
     "default_federate": true,
-    "default_theme": "light",
+    "default_theme": "dark",
+    "brand": "Cravex Chat",
     "room_directory": {
-        "servers": ["matrix-synapse-production.up.railway.app"]
+        "servers": ["cravex1-production.up.railway.app"]
     },
     "jitsi": {
         "preferred_domain": "meet.jit.si"
