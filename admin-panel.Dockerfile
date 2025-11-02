@@ -20,13 +20,12 @@ RUN pip install --no-cache-dir \
     aiohttp \
     psycopg2-binary
 
-# Expose port
-EXPOSE 9000
+# Expose port (Railway uses PORT env var, defaults to 8080)
+EXPOSE 8080
 
 # Environment variables will be set in Railway
 ENV FLASK_APP=admin-panel-server.py
 ENV PYTHONUNBUFFERED=1
-ENV PORT=9000
 
 # Start command
 CMD ["python", "-u", "admin-panel-server.py"]
