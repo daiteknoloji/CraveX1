@@ -1,1 +1,5 @@
-{}
+{
+  "restrictBaseUrl": false,
+  "asManagedUsers": false,
+  "base_url": "https://cravexv5-production.up.railway.app"
+}

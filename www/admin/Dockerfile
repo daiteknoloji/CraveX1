@@ -21,6 +21,9 @@ RUN yarn build --base=$BASE_PATH
 FROM nginx:stable-alpine
 
 COPY --from=builder /src/dist /app
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 RUN rm -rf /usr/share/nginx/html \
  && ln -s /app /usr/share/nginx/html
+
+EXPOSE 80
