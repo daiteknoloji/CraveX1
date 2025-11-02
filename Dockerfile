@@ -1,11 +1,15 @@
 # Railway Dockerfile for Matrix Synapse
 FROM matrixdotorg/synapse:latest
 
-# Copy config template
-COPY synapse-config/homeserver.yaml /data/homeserver.yaml
+# Set environment for Railway
+ENV SYNAPSE_SERVER_NAME=localhost \
+    SYNAPSE_REPORT_STATS=no
 
-# Ensure data directory
-RUN mkdir -p /data/media_store
+# Ensure directories exist
+RUN mkdir -p /data
+
+# Copy config - Railway will mount /data as volume
+COPY synapse-config/homeserver.yaml /homeserver.yaml
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
@@ -13,6 +17,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 
 EXPOSE 8008
 
-# Use Synapse's default entrypoint with direct command
-CMD ["run"]
+# Use Synapse with generate config or run
+CMD ["sh", "-c", "if [ ! -f /data/homeserver.yaml ]; then cp /homeserver.yaml /data/homeserver.yaml; fi && exec python -m synapse.app.homeserver -c /data/homeserver.yaml"]
 
