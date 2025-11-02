@@ -1,5 +1,4 @@
 {
-  "restrictBaseUrl": false,
-  "asManagedUsers": false,
-  "base_url": "http://localhost:8008"
+  "restrictBaseUrl": "https://cravex1-production.up.railway.app",
+  "asManagedUsers": false
 }

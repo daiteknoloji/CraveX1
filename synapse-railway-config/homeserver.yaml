@@ -1,8 +1,8 @@
 ## Server ##
-server_name: "matrix-synapse-production.up.railway.app"
+server_name: "cravex1-production.up.railway.app"
 pid_file: /data/homeserver.pid
-public_baseurl: "https://matrix-synapse-production.up.railway.app/"
-web_client_location: "https://synapse-admin-ui-production.up.railway.app"
+public_baseurl: "https://cravex1-production.up.railway.app/"
+web_client_location: "https://vcravex1.netlify.app"
 serve_server_wellknown: true
 
 ## Ports ##
@@ -16,6 +16,15 @@ listeners:
     resources:
       - names: [client, federation]
         compress: false
+
+# CORS Configuration for Admin Panel
+experimental_features:
+  msc3886_endpoint: /refresh
+
+# Allow CORS from Netlify domains
+cors_allowed_origins:
+  - "https://vcravex1.netlify.app"
+  - "https://cravex-admin.netlify.app"
 
 ## Database ##
 database:
