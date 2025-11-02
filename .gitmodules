@@ -1,0 +1,12 @@
+# Element-web submodule
+[submodule "www/element-web"]
+	path = www/element-web
+	url = https://github.com/element-hq/element-web.git
+	ignore = dirty
+
+# Admin panel submodule  
+[submodule "www/admin"]
+	path = www/admin
+	url = https://github.com/daiteknoloji/matrix-admin-panel.git
+	ignore = dirty
+
