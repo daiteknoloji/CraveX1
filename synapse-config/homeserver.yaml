@@ -37,7 +37,7 @@ database:
   txn_limit: 10000
   args:
     user: postgres
-    password: postgres
+    password: BttVVxjSQvmpfthXVfDCPtvQKBywBPuH
     database: railway
     host: postgres
     port: 5432
@@ -76,11 +76,11 @@ signing_key_path: "/data/localhost.signing.key"
 trusted_key_servers:
   - server_name: "matrix.org"
 
-# Redis
-redis:
-  enabled: true
-  host: redis
-  port: 6379
+# Redis - Disabled for Railway free tier
+# redis:
+#   enabled: true
+#   host: redis
+#   port: 6379
 
 # Email notifications (disabled)
 # email:
