@@ -2,17 +2,14 @@
 # This file is at the root level to control submodule behavior
 
 [build]
-  # Base directory for Element-web
-  base = "www/element-web"
+  # IMPORTANT: Base directory must be set in Netlify dashboard UI
+  # Setting it here doesn't work properly - set in dashboard instead!
   
-  # Build command
-  command = "yarn install && yarn build"
+  # Build command - will run from base directory set in dashboard
+  command = "cd www/element-web && yarn install && yarn build"
   
-  # Output directory  
-  publish = "webapp"
-  
-  # Ignore git submodules completely - they cause deployment failures
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF ."
+  # Output directory relative to repo root
+  publish = "www/element-web/webapp"
 
 [build.environment]
   # Node version
