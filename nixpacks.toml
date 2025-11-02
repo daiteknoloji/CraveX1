@@ -1,0 +1,12 @@
+[phases.setup]
+nixPkgs = ["python310", "postgresql"]
+
+[phases.install]
+cmds = ["pip install flask psycopg2-binary gunicorn"]
+
+[phases.build]
+cmds = []
+
+[start]
+cmd = "python admin-panel-server.py"
+
