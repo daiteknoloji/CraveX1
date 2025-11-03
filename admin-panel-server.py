@@ -1720,7 +1720,7 @@ def toggle_user_admin(user_id):
 @app.route('/api/users', methods=['POST'])
 @login_required
 def create_user():
-    """Create a new user using Matrix Admin API"""
+    """Create a new user (DATABASE ONLY - for Railway)"""
     try:
         username = request.json.get('username', '').strip()
         password = request.json.get('password', '').strip()
@@ -1730,57 +1730,93 @@ def create_user():
         if not username or not password:
             return jsonify({'error': 'Username and password required', 'success': False}), 400
         
-        # Get admin token
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        cur.execute(
-            "SELECT token FROM access_tokens WHERE user_id = '@admin:localhost' ORDER BY id DESC LIMIT 1"
-        )
-        token_row = cur.fetchone()
-        admin_token = token_row[0] if token_row else None
-        
-        cur.close()
-        conn.close()
-        
-        if not admin_token:
-            return jsonify({'error': 'Admin not logged in', 'success': False}), 401
-        
-        # Use Matrix Admin API to create user
-        import requests
-        
         # Construct user ID
         user_id = f'@{username}:localhost'
         
-        headers = {
-            'Authorization': f'Bearer {admin_token}',
-            'Content-Type': 'application/json'
-        }
-        
-        user_data = {
-            'password': password,
-            'displayname': displayname if displayname else username,
-            'admin': make_admin
-        }
-        
-        api_url = f'http://localhost:8008/_synapse/admin/v2/users/{user_id}'
-        
-        response = requests.put(api_url, headers=headers, json=user_data, timeout=10)
-        
-        if response.status_code == 200 or response.status_code == 201:
-            result = response.json()
+        # Try Matrix Admin API first (if running locally with Synapse)
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
             
-            return jsonify({
-                'success': True,
-                'user_id': user_id,
-                'message': 'User created successfully!'
-            })
-        else:
-            return jsonify({
-                'error': f'Matrix API error: {response.status_code}',
-                'success': False,
-                'details': response.text
-            }), response.status_code
+            cur.execute(
+                "SELECT token FROM access_tokens WHERE user_id = '@admin:localhost' ORDER BY id DESC LIMIT 1"
+            )
+            token_row = cur.fetchone()
+            admin_token = token_row[0] if token_row else None
+            
+            cur.close()
+            conn.close()
+            
+            if admin_token:
+                # Matrix API available - use it
+                import requests
+                
+                headers = {
+                    'Authorization': f'Bearer {admin_token}',
+                    'Content-Type': 'application/json'
+                }
+                
+                user_data = {
+                    'password': password,
+                    'displayname': displayname if displayname else username,
+                    'admin': make_admin
+                }
+                
+                api_url = f'http://localhost:8008/_synapse/admin/v2/users/{user_id}'
+                response = requests.put(api_url, headers=headers, json=user_data, timeout=10)
+                
+                if response.status_code == 200 or response.status_code == 201:
+                    return jsonify({
+                        'success': True,
+                        'user_id': user_id,
+                        'message': 'User created successfully via Matrix API!'
+                    })
+        except Exception as api_error:
+            print(f"[INFO] Matrix API not available, using database fallback: {api_error}")
+        
+        # Fallback: Direct database insert (for Railway or when Matrix API is unavailable)
+        import bcrypt
+        import time
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Check if user exists
+        cur.execute("SELECT name FROM users WHERE name = %s", (user_id,))
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'User already exists', 'success': False}), 409
+        
+        # Hash password (bcrypt)
+        password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        # Insert user
+        creation_ts = int(time.time() * 1000)
+        
+        cur.execute("""
+            INSERT INTO users (name, password_hash, creation_ts, admin, is_guest, deactivated)
+            VALUES (%s, %s, %s, %s, 0, 0)
+        """, (user_id, password_hash, creation_ts, 1 if make_admin else 0))
+        
+        # Set displayname if provided
+        if displayname:
+            cur.execute("""
+                INSERT INTO profiles (user_id, displayname)
+                VALUES (%s, %s)
+                ON CONFLICT (user_id) DO UPDATE SET displayname = EXCLUDED.displayname
+            """, (user_id, displayname))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'user_id': user_id,
+            'message': 'User created successfully via database! ⚠️ User will need to login in Element Web.',
+            'note': 'Created directly in database - may need Synapse restart for full sync'
+        })
         
     except Exception as e:
         print(f"[HATA] POST /api/users - {str(e)}")
