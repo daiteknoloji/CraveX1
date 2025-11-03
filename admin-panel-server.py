@@ -1799,13 +1799,13 @@ def create_user():
             VALUES (%s, %s, %s, %s, 0, 0)
         """, (user_id, password_hash, creation_ts, 1 if make_admin else 0))
         
-        # Set displayname if provided
-        if displayname:
-            cur.execute("""
-                INSERT INTO profiles (user_id, displayname)
-                VALUES (%s, %s)
-                ON CONFLICT (user_id) DO UPDATE SET displayname = EXCLUDED.displayname
-            """, (user_id, displayname))
+        # Create profile (required for Matrix)
+        display_name_value = displayname if displayname else username
+        cur.execute("""
+            INSERT INTO profiles (user_id, displayname, full_user_id)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (user_id) DO UPDATE SET displayname = EXCLUDED.displayname, full_user_id = EXCLUDED.full_user_id
+        """, (user_id, display_name_value, user_id))
         
         conn.commit()
         cur.close()
