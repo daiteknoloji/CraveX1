@@ -1827,7 +1827,7 @@ def create_user():
         print(f"[DEBUG] Created user {user_id} with password hash: {password_hash[:20]}...")
         
         # Insert user (with all required columns)
-        creation_ts = int(time.time() * 1000)
+        creation_ts = int(time.time())  # Synapse uses SECONDS, not milliseconds
         
         # Check which columns exist in users table
         cur.execute("""
