@@ -1847,13 +1847,16 @@ def create_user():
         
         if has_locked:
             base_cols += ", locked"
-            base_vals += ", false"
+            base_vals += ", %s"
+            params.append(False)
         if has_suspended:
             base_cols += ", suspended"
-            base_vals += ", false"
+            base_vals += ", %s"
+            params.append(False)
         if has_approved:
             base_cols += ", approved"
-            base_vals += ", true"
+            base_vals += ", %s"
+            params.append(True)
         
         insert_query = f"""
             INSERT INTO users ({base_cols})
