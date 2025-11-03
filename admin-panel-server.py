@@ -1878,6 +1878,22 @@ def create_user():
             ON CONFLICT (user_id) DO UPDATE SET displayname = EXCLUDED.displayname, full_user_id = EXCLUDED.full_user_id
         """, (user_id, display_name_value, user_id))
         
+        # Add to user_directory (CRITICAL for login!)
+        cur.execute("""
+            INSERT INTO user_directory (user_id, display_name, avatar_url)
+            VALUES (%s, %s, NULL)
+            ON CONFLICT (user_id) DO UPDATE SET display_name = EXCLUDED.display_name
+        """, (user_id, display_name_value))
+        
+        # Add to user_directory_search (for search functionality)
+        # Build search vector: lowercase username and display name
+        search_vector = f"'{HOMESERVER_DOMAIN}':2 '{username.lower()}':1A,3B"
+        cur.execute("""
+            INSERT INTO user_directory_search (user_id, vector)
+            VALUES (%s, %s)
+            ON CONFLICT (user_id) DO UPDATE SET vector = EXCLUDED.vector
+        """, (user_id, search_vector))
+        
         conn.commit()
         cur.close()
         conn.close()
