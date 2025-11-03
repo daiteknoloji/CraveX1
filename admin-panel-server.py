@@ -33,6 +33,10 @@ DB_CONFIG = {
 ADMIN_USERNAME = 'admin'
 ADMIN_PASSWORD = 'admin123'
 
+# Homeserver domain (Railway or localhost)
+HOMESERVER_DOMAIN = os.getenv('HOMESERVER_DOMAIN', 'localhost')
+ADMIN_USER_ID = f'@admin:{HOMESERVER_DOMAIN}'
+
 def get_db_connection():
     return psycopg2.connect(**DB_CONFIG)
 
@@ -1368,15 +1372,16 @@ def add_room_member(room_id):
         
         # Get admin token for Matrix API call
         cur.execute(
-            "SELECT token FROM access_tokens WHERE user_id = '@admin:localhost' ORDER BY id DESC LIMIT 1"
+            "SELECT token FROM access_tokens WHERE user_id = %s ORDER BY id DESC LIMIT 1",
+            (ADMIN_USER_ID,)
         )
         token_row = cur.fetchone()
         admin_token = token_row[0] if token_row else None
         
         # Check if admin is already in room (before closing connection)
         cur.execute(
-            "SELECT COUNT(*) FROM room_memberships WHERE room_id = %s AND user_id = '@admin:localhost' AND membership = 'join'",
-            (room_id,)
+            "SELECT COUNT(*) FROM room_memberships WHERE room_id = %s AND user_id = %s AND membership = 'join'",
+            (room_id, ADMIN_USER_ID)
         )
         admin_in_room = cur.fetchone()[0] > 0
         
@@ -1400,7 +1405,7 @@ def add_room_member(room_id):
             try:
                 print(f"Admin not in room, adding admin first...")
                 admin_join_url = f'http://localhost:8008/_synapse/admin/v1/join/{room_id}'
-                admin_response = requests.post(admin_join_url, headers=headers, json={'user_id': '@admin:localhost'}, timeout=5)
+                admin_response = requests.post(admin_join_url, headers=headers, json={'user_id': ADMIN_USER_ID}, timeout=5)
                 print(f"Admin join result: {admin_response.status_code}")
                 
                 if admin_response.status_code != 200:
@@ -1467,9 +1472,9 @@ def add_room_member(room_id):
                     
                     cur.execute("""
                         INSERT INTO room_memberships (event_id, user_id, sender, room_id, membership)
-                        VALUES (%s, %s, '@admin:localhost', %s, 'join')
+                        VALUES (%s, %s, %s, %s, 'join')
                         ON CONFLICT DO NOTHING
-                    """, (event_id, user_id, room_id))
+                    """, (event_id, user_id, ADMIN_USER_ID, room_id))
                     
                     conn.commit()
                     cur.close()
@@ -1757,8 +1762,9 @@ def create_user():
         if not username or not password:
             return jsonify({'error': 'Username and password required', 'success': False}), 400
         
-        # Construct user ID
-        user_id = f'@{username}:localhost'
+        # Construct user ID with proper domain (Railway or localhost)
+        homeserver_domain = os.getenv('HOMESERVER_DOMAIN', 'localhost')
+        user_id = f'@{username}:{homeserver_domain}'
         
         # Try Matrix Admin API first (if running locally with Synapse)
         try:
@@ -1766,7 +1772,8 @@ def create_user():
             cur = conn.cursor()
             
             cur.execute(
-                "SELECT token FROM access_tokens WHERE user_id = '@admin:localhost' ORDER BY id DESC LIMIT 1"
+                "SELECT token FROM access_tokens WHERE user_id = %s ORDER BY id DESC LIMIT 1",
+                (ADMIN_USER_ID,)
             )
             token_row = cur.fetchone()
             admin_token = token_row[0] if token_row else None
@@ -1864,7 +1871,8 @@ def create_room():
         cur = conn.cursor()
         
         cur.execute(
-            "SELECT token FROM access_tokens WHERE user_id = '@admin:localhost' ORDER BY id DESC LIMIT 1"
+            "SELECT token FROM access_tokens WHERE user_id = %s ORDER BY id DESC LIMIT 1",
+            (ADMIN_USER_ID,)
         )
         token_row = cur.fetchone()
         admin_token = token_row[0] if token_row else None
