@@ -1822,16 +1822,41 @@ def create_user():
             conn.close()
             return jsonify({'error': 'User already exists', 'success': False}), 409
         
-        # Hash password (bcrypt)
-        password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        # Hash password (bcrypt with 12 rounds - same as Synapse)
+        password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(rounds=12)).decode('utf-8')
+        print(f"[DEBUG] Created user {user_id} with password hash: {password_hash[:20]}...")
         
-        # Insert user
+        # Insert user (with all required columns)
         creation_ts = int(time.time() * 1000)
         
+        # Check which columns exist in users table
         cur.execute("""
-            INSERT INTO users (name, password_hash, creation_ts, admin, is_guest, deactivated)
-            VALUES (%s, %s, %s, %s, 0, 0)
-        """, (user_id, password_hash, creation_ts, 1 if make_admin else 0))
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'users' AND column_name IN ('locked', 'suspended')
+        """)
+        existing_user_cols = [row[0] for row in cur.fetchall()]
+        has_locked = 'locked' in existing_user_cols
+        has_suspended = 'suspended' in existing_user_cols
+        
+        # Build INSERT query with available columns
+        base_cols = "name, password_hash, creation_ts, admin, is_guest, deactivated"
+        base_vals = "%s, %s, %s, %s, 0, 0"
+        params = [user_id, password_hash, creation_ts, 1 if make_admin else 0]
+        
+        if has_locked:
+            base_cols += ", locked"
+            base_vals += ", false"
+        if has_suspended:
+            base_cols += ", suspended"
+            base_vals += ", false"
+        
+        insert_query = f"""
+            INSERT INTO users ({base_cols})
+            VALUES ({base_vals})
+        """
+        
+        cur.execute(insert_query, tuple(params))
         
         # Create profile (required for Matrix)
         display_name_value = displayname if displayname else username
