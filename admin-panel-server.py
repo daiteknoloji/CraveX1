@@ -943,7 +943,26 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    return render_template_string(DASHBOARD_TEMPLATE)
+    # Serve the modern UI
+    try:
+        with open('admin-panel-ui-modern.html', 'r', encoding='utf-8') as f:
+            return f.read()
+    except:
+        # Fallback to old template
+        return render_template_string(DASHBOARD_TEMPLATE)
+
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    """Serve static files (logo, etc.)"""
+    import os
+    static_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(static_dir, filename)
+    print(f"[DEBUG] Static file request: {filename}")
+    print(f"[DEBUG] Looking for: {file_path}")
+    print(f"[DEBUG] Exists: {os.path.exists(file_path)}")
+    if os.path.exists(file_path):
+        return send_file(file_path)
+    return f"File not found: {file_path}", 404
 
 @app.route('/api/stats')
 @login_required
@@ -1009,25 +1028,31 @@ def get_messages():
         cur.execute(count_query)
         total = cur.fetchone()[0]
         
-        # Sayfalı mesajları al
+        # Sayfalı mesajları al (silinen mesajlar dahil)
         query = f"""
             SELECT 
                 to_timestamp(e.origin_server_ts/1000) as timestamp,
                 e.sender,
                 e.room_id,
                 (SELECT ej2.json::json->'content'->>'name' 
-                 FROM events e2 
-                 JOIN event_json ej2 ON e2.event_id = ej2.event_id 
-                 WHERE e2.room_id = e.room_id 
-                   AND e2.type = 'm.room.name' 
-                 ORDER BY e2.origin_server_ts DESC 
+                 FROM event_json ej2
+                 WHERE ej2.room_id = e.room_id 
+                   AND ej2.json::json->>'type' = 'm.room.name'
+                 ORDER BY (ej2.json::json->>'origin_server_ts')::bigint DESC
                  LIMIT 1) as room_name,
                 ej.json::json->'content'->>'body' as message,
                 (SELECT STRING_AGG(DISTINCT rm.user_id, ', ')
                  FROM room_memberships rm
                  WHERE rm.room_id = e.room_id
                    AND rm.user_id != e.sender
-                   AND rm.membership = 'join') as recipients
+                   AND rm.membership = 'join') as recipients,
+                -- Check if deleted
+                (SELECT er.sender 
+                 FROM redactions r
+                 JOIN events er ON r.event_id = er.event_id
+                 WHERE r.redacts = e.event_id 
+                 LIMIT 1) as redacted_by,
+                e.event_id
             FROM events e
             JOIN event_json ej ON e.event_id = ej.event_id
             WHERE {where_clause}
@@ -1041,6 +1066,11 @@ def get_messages():
         messages = []
         for row in rows:
             recipients = row[5] if row[5] else ''
+            is_deleted = row[6] is not None  # redacted_by exists
+            room_name = row[3]
+            room_id = row[2]
+            sender = row[1]
+            
             # Eğer tek alıcı varsa direkt göster, birden fazlaysa sayı göster
             if recipients:
                 recipient_list = recipients.split(', ')
@@ -1054,14 +1084,43 @@ def get_messages():
                 recipient_display = 'Grup'
                 recipient_full_list = None
             
+            # DM room naming logic
+            if not room_name:
+                # Get all members in the room
+                cur.execute("""
+                    SELECT user_id 
+                    FROM room_memberships 
+                    WHERE room_id = %s AND membership = 'join'
+                    ORDER BY user_id
+                """, (room_id,))
+                members = [m[0] for m in cur.fetchall()]
+                
+                if len(members) == 2:
+                    # It's a DM - show member names
+                    member_names = []
+                    for member_id in members:
+                        cur.execute("SELECT displayname FROM profiles WHERE user_id = %s LIMIT 1", (member_id,))
+                        display_row = cur.fetchone()
+                        display_name = display_row[0] if display_row and display_row[0] else member_id
+                        member_names.append(display_name)
+                    
+                    room_name = f'DM: {member_names[0]} ↔ {member_names[1]}'
+                elif len(members) > 2:
+                    room_name = f'Grup Chat ({len(members)} kişi)'
+                else:
+                    room_name = 'İsimsiz oda'
+            
             messages.append({
                 'timestamp': row[0].strftime('%Y-%m-%d %H:%M:%S') if row[0] else '',
-                'sender': row[1],
-                'room_id': row[2],
-                'room_name': row[3] or 'İsimsiz oda',
+                'sender': sender,
+                'room_id': room_id,
+                'room_name': room_name,
                 'message': row[4],
                 'recipient': recipient_display,
-                'recipient_list': recipient_full_list
+                'recipient_list': recipient_full_list,
+                'is_deleted': is_deleted,
+                'deleted_by': row[6] if is_deleted else None,
+                'event_id': row[7]
             })
         
         cur.close()
@@ -1076,6 +1135,724 @@ def get_messages():
         })
     except Exception as e:
         print(f"[HATA] /api/messages - {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+# ============================================
+# ROOM MANAGEMENT API ENDPOINTS
+# ============================================
+
+@app.route('/api/rooms')
+@login_required
+def get_rooms():
+    """Get all rooms with stats"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        query = """
+            SELECT 
+                r.room_id,
+                (SELECT ej.json::json->'content'->>'name' 
+                 FROM event_json ej
+                 WHERE ej.room_id = r.room_id 
+                   AND ej.json::json->>'type' = 'm.room.name'
+                 ORDER BY (ej.json::json->>'origin_server_ts')::bigint DESC
+                 LIMIT 1) as room_name,
+                r.creator,
+                r.is_public,
+                (SELECT COUNT(*) FROM room_memberships 
+                 WHERE room_id = r.room_id AND membership = 'join') as member_count,
+                (SELECT COUNT(*) FROM events 
+                 WHERE room_id = r.room_id AND type = 'm.room.message') as message_count,
+                -- Get members for DM detection
+                (SELECT STRING_AGG(user_id, '|||')
+                 FROM room_memberships
+                 WHERE room_id = r.room_id AND membership = 'join'
+                 LIMIT 10) as members_list
+            FROM rooms r
+            ORDER BY member_count DESC;
+        """
+        
+        cur.execute(query)
+        rows = cur.fetchall()
+        
+        rooms = []
+        for row in rows:
+            room_name = row[1]
+            members_list = row[6]
+            member_count = row[4] or 0
+            
+            # If no name and 2 members, it's a DM - show member names
+            if not room_name and member_count == 2 and members_list:
+                members = members_list.split('|||')
+                # Get displaynames for members
+                member_names = []
+                for member in members[:2]:
+                    cur.execute("SELECT displayname FROM profiles WHERE user_id = %s LIMIT 1", (member,))
+                    display_row = cur.fetchone()
+                    display_name = display_row[0] if display_row and display_row[0] else member
+                    member_names.append(display_name)
+                
+                if len(member_names) == 2:
+                    room_name = f'DM: {member_names[0]} ↔ {member_names[1]}'
+                else:
+                    room_name = 'DM (2 kişi)'
+            elif not room_name and member_count > 2:
+                room_name = f'Grup Chat ({member_count} kişi)'
+            elif not room_name:
+                room_name = 'İsimsiz Oda'
+            
+            rooms.append({
+                'room_id': row[0],
+                'name': room_name,
+                'creator': row[2],
+                'is_public': row[3],
+                'member_count': member_count,
+                'message_count': row[5] or 0,
+                'is_dm': (not row[1] and member_count == 2)  # DM indicator
+            })
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({'rooms': rooms, 'total': len(rooms)})
+        
+    except Exception as e:
+        print(f"[HATA] /api/rooms - {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rooms/<room_id>/members')
+@login_required
+def get_room_members(room_id):
+    """Get members of a specific room"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        query = """
+            SELECT DISTINCT
+                rm.user_id,
+                rm.membership,
+                (SELECT displayname FROM profiles 
+                 WHERE user_id = rm.user_id LIMIT 1) as displayname
+            FROM room_memberships rm
+            WHERE rm.room_id = %s AND rm.membership = 'join'
+            ORDER BY rm.user_id;
+        """
+        
+        cur.execute(query, (room_id,))
+        rows = cur.fetchall()
+        
+        members = []
+        for row in rows:
+            members.append({
+                'user_id': row[0],
+                'membership': row[1],
+                'displayname': row[2]
+            })
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({'members': members, 'total': len(members)})
+        
+    except Exception as e:
+        print(f"[HATA] /api/rooms/{room_id}/members - {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rooms/<room_id>/messages')
+@login_required
+def get_room_messages(room_id):
+    """Get messages from a specific room"""
+    try:
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('page_size', 50))
+        offset = (page - 1) * page_size
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Count total messages
+        count_query = """
+            SELECT COUNT(*)
+            FROM events e
+            WHERE e.room_id = %s AND e.type = 'm.room.message'
+        """
+        cur.execute(count_query, (room_id,))
+        total = cur.fetchone()[0]
+        
+        # Get paginated messages with redaction info
+        query = """
+            SELECT 
+                to_timestamp(e.origin_server_ts/1000) as timestamp,
+                e.sender,
+                ej.json::json->'content'->>'body' as message,
+                ej.json::json->'content'->>'msgtype' as msgtype,
+                e.event_id,
+                -- Check if message was deleted using redactions table
+                (SELECT er.sender 
+                 FROM redactions r
+                 JOIN events er ON r.event_id = er.event_id
+                 WHERE r.redacts = e.event_id 
+                 LIMIT 1) as redacted_by,
+                (SELECT to_timestamp(er.origin_server_ts/1000)
+                 FROM redactions r
+                 JOIN events er ON r.event_id = er.event_id
+                 WHERE r.redacts = e.event_id 
+                 LIMIT 1) as redacted_at
+            FROM events e
+            JOIN event_json ej ON e.event_id = ej.event_id
+            WHERE e.room_id = %s AND e.type = 'm.room.message'
+            ORDER BY e.origin_server_ts DESC
+            LIMIT %s OFFSET %s;
+        """
+        
+        cur.execute(query, (room_id, page_size, offset))
+        rows = cur.fetchall()
+        
+        messages = []
+        for row in rows:
+            is_deleted = row[5] is not None  # redacted_by exists
+            
+            messages.append({
+                'timestamp': row[0].strftime('%Y-%m-%d %H:%M:%S') if row[0] else '',
+                'sender': row[1],
+                'message': row[2] or '',
+                'msgtype': row[3] or 'm.text',
+                'event_id': row[4],
+                'is_deleted': is_deleted,
+                'deleted_by': row[5] if is_deleted else None,
+                'deleted_at': row[6].strftime('%Y-%m-%d %H:%M:%S') if row[6] else None
+            })
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'messages': messages,
+            'total': total,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': (total + page_size - 1) // page_size
+        })
+        
+    except Exception as e:
+        print(f"[HATA] /api/rooms/{room_id}/messages - {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rooms/<room_id>/members', methods=['POST'])
+@login_required
+def add_room_member(room_id):
+    """Add a member to a room (DATABASE + Matrix API for sync)"""
+    try:
+        user_id = request.json.get('user_id')
+        if not user_id:
+            return jsonify({'error': 'user_id required'}), 400
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Check if already member
+        cur.execute(
+            "SELECT COUNT(*) FROM room_memberships WHERE room_id = %s AND user_id = %s AND membership = 'join'",
+            (room_id, user_id)
+        )
+        exists = cur.fetchone()[0]
+        
+        if exists > 0:
+            cur.close()
+            conn.close()
+            return jsonify({'message': 'User already in room', 'success': True})
+        
+        # Get admin token for Matrix API call
+        cur.execute(
+            "SELECT token FROM access_tokens WHERE user_id = '@admin:localhost' ORDER BY id DESC LIMIT 1"
+        )
+        token_row = cur.fetchone()
+        admin_token = token_row[0] if token_row else None
+        
+        # Check if admin is already in room (before closing connection)
+        cur.execute(
+            "SELECT COUNT(*) FROM room_memberships WHERE room_id = %s AND user_id = '@admin:localhost' AND membership = 'join'",
+            (room_id,)
+        )
+        admin_in_room = cur.fetchone()[0] > 0
+        
+        cur.close()
+        conn.close()
+        
+        # MUST use Matrix Admin API for proper event stream
+        if not admin_token:
+            return jsonify({'error': 'Admin not logged in. Please login to admin panel at http://localhost:5173', 'success': False}), 401
+        
+        import requests
+        
+        # Step 1: First, make sure admin is in the room
+        headers = {
+            'Authorization': f'Bearer {admin_token}',
+            'Content-Type': 'application/json'
+        }
+        
+        # If admin not in room, add admin first
+        if not admin_in_room:
+            try:
+                print(f"Admin not in room, adding admin first...")
+                admin_join_url = f'http://localhost:8008/_synapse/admin/v1/join/{room_id}'
+                admin_response = requests.post(admin_join_url, headers=headers, json={'user_id': '@admin:localhost'}, timeout=5)
+                print(f"Admin join result: {admin_response.status_code}")
+                
+                if admin_response.status_code != 200:
+                    print(f"Admin join failed: {admin_response.text}")
+                    # Continue anyway, maybe user can be added
+            except Exception as admin_err:
+                print(f"Admin join attempt failed: {admin_err}")
+                # Continue anyway
+        
+        # Step 2: First try to INVITE the user (so they get notification)
+        try:
+            # Use Client API to invite (sends notification)
+            invite_url = f'http://localhost:8008/_matrix/client/r0/rooms/{room_id}/invite'
+            invite_payload = {'user_id': user_id}
+            
+            print(f"[1] Sending invite to {user_id} in room {room_id}...")
+            invite_response = requests.post(invite_url, headers=headers, json=invite_payload, timeout=5)
+            print(f"[1] Invite result: {invite_response.status_code} - {invite_response.text[:200]}")
+            
+            if invite_response.status_code == 200:
+                # Invite successful - now auto-accept by joining them
+                print(f"[2] Now force-joining {user_id}...")
+                join_url = f'http://localhost:8008/_synapse/admin/v1/join/{room_id}'
+                join_response = requests.post(join_url, headers=headers, json={'user_id': user_id}, timeout=5)
+                print(f"[2] Force-join result: {join_response.status_code} - {join_response.text[:200]}")
+                
+                if join_response.status_code == 200:
+                    return jsonify({
+                        'message': f'✅ {user_id} added and joined! Refresh Element Web to see.',
+                        'success': True,
+                        'method': 'matrix_api'
+                    })
+                else:
+                    # Invite sent but couldn't force join
+                    return jsonify({
+                        'message': f'📧 Invite sent to {user_id}! They need to accept in Element Web.',
+                        'success': True,
+                        'method': 'invite_only'
+                    })
+            
+            # If invite failed, try direct admin join
+            print(f"[3] Invite failed, trying direct admin join...")
+            api_url = f'http://localhost:8008/_synapse/admin/v1/join/{room_id}'
+            response = requests.post(api_url, headers=headers, json={'user_id': user_id}, timeout=5)
+            print(f"[3] Direct join result: {response.status_code} - {response.text[:200]}")
+            
+            if response.status_code == 200:
+                return jsonify({
+                    'message': f'✅ {user_id} force-joined! Refresh Element Web.',
+                    'success': True,
+                    'method': 'admin_join'
+                })
+            elif response.status_code == 403:
+                # 403 means admin doesn't have permission - often happens in DM/private rooms
+                # Fallback: Try database insert (won't sync immediately but works)
+                print(f"Matrix API 403, trying database fallback...")
+                
+                try:
+                    conn = get_db_connection()
+                    cur = conn.cursor()
+                    
+                    import time
+                    event_id = f"$admin_force_add_{int(time.time()*1000)}"
+                    
+                    cur.execute("""
+                        INSERT INTO room_memberships (event_id, user_id, sender, room_id, membership)
+                        VALUES (%s, %s, '@admin:localhost', %s, 'join')
+                        ON CONFLICT DO NOTHING
+                    """, (event_id, user_id, room_id))
+                    
+                    conn.commit()
+                    cur.close()
+                    conn.close()
+                    
+                    return jsonify({
+                        'success': True,
+                        'message': f'Member added via database (bypass). User may need to refresh Element Web to see the room.',
+                        'method': 'database',
+                        'note': 'Added directly to database - real-time sync may not work immediately'
+                    })
+                    
+                except Exception as db_err:
+                    print(f"Database fallback also failed: {db_err}")
+                    return jsonify({
+                        'error': f'Cannot add member. This is a private DM room and admin cannot force join.',
+                        'success': False,
+                        'suggestion': 'Ask existing room members to invite the user via Element Web.'
+                    }), 403
+            else:
+                return jsonify({
+                    'error': f'Matrix API error: {response.status_code}',
+                    'success': False,
+                    'details': response.text
+                }), response.status_code
+                
+        except Exception as api_error:
+            print(f"Matrix API error: {api_error}")
+            return jsonify({
+                'error': f'Failed to add member via Matrix API: {str(api_error)}',
+                'success': False
+            }), 500
+        
+    except Exception as e:
+        print(f"[HATA] POST /api/rooms/{room_id}/members - {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rooms/<room_id>/members/<user_id>', methods=['DELETE'])
+@login_required
+def remove_room_member(room_id, user_id):
+    """Remove a member from a room (DIRECT DATABASE)"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Check current membership status
+        cur.execute("""
+            SELECT membership, event_id 
+            FROM room_memberships 
+            WHERE room_id = %s AND user_id = %s
+        """, (room_id, user_id))
+        
+        result = cur.fetchone()
+        
+        if not result:
+            cur.close()
+            conn.close()
+            return jsonify({'message': 'Member not found in room', 'success': False}), 404
+        
+        current_membership = result[0]
+        
+        # If already left, no need to update
+        if current_membership == 'leave':
+            cur.close()
+            conn.close()
+            return jsonify({'message': 'Member already removed', 'success': True})
+        
+        # Generate unique event_id using uuid
+        import uuid
+        event_id = f"$admin_remove_{uuid.uuid4().hex}"
+        
+        # Update membership to 'leave'
+        cur.execute("""
+            UPDATE room_memberships 
+            SET membership = 'leave', event_id = %s
+            WHERE room_id = %s AND user_id = %s AND membership != 'leave'
+        """, (event_id, room_id, user_id))
+        
+        conn.commit()
+        
+        affected = cur.rowcount
+        cur.close()
+        conn.close()
+        
+        if affected > 0:
+            return jsonify({'message': 'Member removed successfully', 'success': True})
+        else:
+            return jsonify({'message': 'Member already removed', 'success': True})
+        
+    except Exception as e:
+        print(f"[HATA] DELETE /api/rooms/{room_id}/members/{user_id} - {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users')
+@login_required
+def get_users():
+    """Get all users with extended info"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        query = """
+            SELECT 
+                u.name,
+                u.admin,
+                u.deactivated,
+                u.creation_ts,
+                (SELECT displayname FROM profiles WHERE user_id = u.name LIMIT 1) as displayname,
+                (SELECT COUNT(DISTINCT room_id) FROM room_memberships 
+                 WHERE user_id = u.name AND membership = 'join') as room_count,
+                (SELECT COUNT(*) FROM access_tokens WHERE user_id = u.name) as token_count,
+                u.shadow_banned,
+                u.locked
+            FROM users u
+            WHERE u.deactivated = 0
+            ORDER BY u.admin DESC, u.name;
+        """
+        
+        cur.execute(query)
+        rows = cur.fetchall()
+        
+        users = []
+        for row in rows:
+            users.append({
+                'user_id': row[0],
+                'admin': bool(row[1]),
+                'deactivated': bool(row[2]),
+                'created': datetime.fromtimestamp(row[3]).strftime('%Y-%m-%d %H:%M:%S') if row[3] else '',
+                'displayname': row[4],
+                'room_count': row[5] or 0,
+                'active_sessions': row[6] or 0,
+                'shadow_banned': bool(row[7]) if row[7] is not None else False,
+                'locked': bool(row[8]) if row[8] is not None else False
+            })
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({'users': users, 'total': len(users)})
+        
+    except Exception as e:
+        print(f"[HATA] /api/users - {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users/<user_id>/details')
+@login_required
+def get_user_details(user_id):
+    """Get detailed user info"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # User basic info
+        cur.execute("""
+            SELECT name, admin, creation_ts, deactivated, shadow_banned, locked
+            FROM users WHERE name = %s
+        """, (user_id,))
+        user_row = cur.fetchone()
+        
+        if not user_row:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # User's rooms
+        cur.execute("""
+            SELECT 
+                r.room_id,
+                (SELECT ej.json::json->'content'->>'name' 
+                 FROM event_json ej
+                 WHERE ej.room_id = r.room_id 
+                   AND ej.json::json->>'type' = 'm.room.name'
+                 LIMIT 1) as room_name,
+                (SELECT COUNT(*) FROM room_memberships 
+                 WHERE room_id = r.room_id AND membership = 'join') as member_count
+            FROM room_memberships rm
+            JOIN rooms r ON rm.room_id = r.room_id
+            WHERE rm.user_id = %s AND rm.membership = 'join'
+            ORDER BY member_count DESC
+            LIMIT 20;
+        """, (user_id,))
+        rooms = cur.fetchall()
+        
+        # User's devices/sessions
+        cur.execute("""
+            SELECT device_id, last_seen, ip, user_agent
+            FROM devices
+            WHERE user_id = %s
+            ORDER BY last_seen DESC NULLS LAST
+            LIMIT 10;
+        """, (user_id,))
+        devices = cur.fetchall()
+        
+        # Last activity
+        cur.execute("""
+            SELECT MAX(last_seen) FROM devices WHERE user_id = %s
+        """, (user_id,))
+        last_seen_row = cur.fetchone()
+        last_seen = last_seen_row[0] if last_seen_row and last_seen_row[0] else None
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'user_id': user_row[0],
+            'admin': bool(user_row[1]),
+            'created': datetime.fromtimestamp(user_row[2]).strftime('%Y-%m-%d %H:%M:%S') if user_row[2] else '',
+            'deactivated': bool(user_row[3]),
+            'shadow_banned': bool(user_row[4]) if user_row[4] is not None else False,
+            'locked': bool(user_row[5]) if user_row[5] is not None else False,
+            'last_seen': datetime.fromtimestamp(last_seen/1000).strftime('%Y-%m-%d %H:%M:%S') if last_seen else 'Hiç görülmedi',
+            'rooms': [{'room_id': r[0], 'name': r[1] or 'İsimsiz Oda', 'member_count': r[2]} for r in rooms],
+            'devices': [{'device_id': d[0], 'last_seen': datetime.fromtimestamp(d[1]/1000).strftime('%Y-%m-%d %H:%M:%S') if d[1] else 'Bilinmiyor', 'ip': d[2], 'user_agent': d[3]} for d in devices]
+        })
+        
+    except Exception as e:
+        print(f"[HATA] /api/users/{user_id}/details - {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users/<user_id>/admin', methods=['PUT'])
+@login_required
+def toggle_user_admin(user_id):
+    """Toggle user admin status"""
+    try:
+        make_admin = request.json.get('admin', False)
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            UPDATE users SET admin = %s WHERE name = %s
+        """, (1 if make_admin else 0, user_id))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'User {"is now" if make_admin else "is no longer"} an admin',
+            'admin': make_admin
+        })
+        
+    except Exception as e:
+        print(f"[HATA] PUT /api/users/{user_id}/admin - {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users', methods=['POST'])
+@login_required
+def create_user():
+    """Create a new user using Matrix Admin API"""
+    try:
+        username = request.json.get('username', '').strip()
+        password = request.json.get('password', '').strip()
+        displayname = request.json.get('displayname', '').strip()
+        make_admin = request.json.get('admin', False)
+        
+        if not username or not password:
+            return jsonify({'error': 'Username and password required', 'success': False}), 400
+        
+        # Get admin token
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute(
+            "SELECT token FROM access_tokens WHERE user_id = '@admin:localhost' ORDER BY id DESC LIMIT 1"
+        )
+        token_row = cur.fetchone()
+        admin_token = token_row[0] if token_row else None
+        
+        cur.close()
+        conn.close()
+        
+        if not admin_token:
+            return jsonify({'error': 'Admin not logged in', 'success': False}), 401
+        
+        # Use Matrix Admin API to create user
+        import requests
+        
+        # Construct user ID
+        user_id = f'@{username}:localhost'
+        
+        headers = {
+            'Authorization': f'Bearer {admin_token}',
+            'Content-Type': 'application/json'
+        }
+        
+        user_data = {
+            'password': password,
+            'displayname': displayname if displayname else username,
+            'admin': make_admin
+        }
+        
+        api_url = f'http://localhost:8008/_synapse/admin/v2/users/{user_id}'
+        
+        response = requests.put(api_url, headers=headers, json=user_data, timeout=10)
+        
+        if response.status_code == 200 or response.status_code == 201:
+            result = response.json()
+            
+            return jsonify({
+                'success': True,
+                'user_id': user_id,
+                'message': 'User created successfully!'
+            })
+        else:
+            return jsonify({
+                'error': f'Matrix API error: {response.status_code}',
+                'success': False,
+                'details': response.text
+            }), response.status_code
+        
+    except Exception as e:
+        print(f"[HATA] POST /api/users - {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rooms', methods=['POST'])
+@login_required  
+def create_room():
+    """Create a new room using Matrix Client API (proper event stream)"""
+    try:
+        room_name = request.json.get('name', 'Yeni Oda')
+        is_public = request.json.get('is_public', True)
+        
+        # Get admin token
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute(
+            "SELECT token FROM access_tokens WHERE user_id = '@admin:localhost' ORDER BY id DESC LIMIT 1"
+        )
+        token_row = cur.fetchone()
+        admin_token = token_row[0] if token_row else None
+        
+        cur.close()
+        conn.close()
+        
+        if not admin_token:
+            return jsonify({
+                'error': 'Admin not logged in. Please login to http://localhost:5173 first',
+                'success': False
+            }), 401
+        
+        # Use Matrix Client API to create room (proper way!)
+        import requests
+        
+        headers = {
+            'Authorization': f'Bearer {admin_token}',
+            'Content-Type': 'application/json'
+        }
+        
+        create_room_body = {
+            'name': room_name,
+            'visibility': 'public' if is_public else 'private',
+            'preset': 'public_chat' if is_public else 'private_chat',
+            'room_version': '10'
+        }
+        
+        api_url = 'http://localhost:8008/_matrix/client/v3/createRoom'
+        
+        response = requests.post(api_url, headers=headers, json=create_room_body, timeout=10)
+        
+        if response.status_code == 200:
+            result = response.json()
+            room_id = result.get('room_id', '')
+            
+            return jsonify({
+                'success': True,
+                'room_id': room_id,
+                'name': room_name,
+                'message': 'Room created successfully via Matrix API!'
+            })
+        else:
+            return jsonify({
+                'error': f'Matrix API error: {response.status_code}',
+                'success': False,
+                'details': response.text
+            }), response.status_code
+        
+    except Exception as e:
+        print(f"[HATA] POST /api/rooms - {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
