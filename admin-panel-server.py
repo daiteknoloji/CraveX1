@@ -1796,7 +1796,9 @@ def create_user():
                     'admin': make_admin
                 }
                 
-                api_url = f'http://localhost:8008/_synapse/admin/v2/users/{user_id}'
+                # Use Synapse URL (localhost for local, Railway URL for production)
+                synapse_url = os.getenv('SYNAPSE_URL', 'http://localhost:8008')
+                api_url = f'{synapse_url}/_synapse/admin/v2/users/{user_id}'
                 response = requests.put(api_url, headers=headers, json=user_data, timeout=10)
                 
                 if response.status_code == 200 or response.status_code == 201:
