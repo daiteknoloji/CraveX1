@@ -25,6 +25,7 @@ experimental_features:
 cors_allowed_origins:
   - "https://vcravex1.netlify.app"
   - "https://cravex-admin.netlify.app"
+  - "https://cozy-dragon-54547b.netlify.app"
 
 ## Database ##
 database:
