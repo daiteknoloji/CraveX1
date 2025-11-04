@@ -1388,23 +1388,43 @@ def add_room_member(room_id):
         cur.close()
         conn.close()
         
-        # MUST use Matrix Admin API for proper event stream
+        # If no token, try auto-login
         if not admin_token:
-            return jsonify({'error': 'Admin not logged in. Please login to admin panel at http://localhost:5173', 'success': False}), 401
+            admin_username = os.getenv('ADMIN_USERNAME', 'admin')
+            admin_password = os.getenv('ADMIN_PASSWORD')
+            synapse_url = os.getenv('SYNAPSE_URL', 'http://localhost:8008')
+            
+            if admin_password:
+                print(f"[INFO] No admin token, attempting auto-login...")
+                try:
+                    login_response = requests.post(
+                        f'{synapse_url}/_matrix/client/v3/login',
+                        json={
+                            'type': 'm.login.password',
+                            'identifier': {'type': 'm.id.user', 'user': admin_username},
+                            'password': admin_password
+                        },
+                        timeout=10
+                    )
+                    if login_response.status_code == 200:
+                        admin_token = login_response.json().get('access_token')
+                        print(f"[INFO] Auto-login successful for member add!")
+                except Exception as e:
+                    print(f"[WARN] Auto-login failed: {e}")
         
-        import requests
+        if not admin_token:
+            return jsonify({'error': 'Admin not logged in. Please set ADMIN_PASSWORD environment variable.', 'success': False}), 401
         
-        # Step 1: First, make sure admin is in the room
+        # Update headers with new token (in case auto-login happened)
         headers = {
             'Authorization': f'Bearer {admin_token}',
             'Content-Type': 'application/json'
         }
         
-        # If admin not in room, add admin first
         if not admin_in_room:
             try:
                 print(f"Admin not in room, adding admin first...")
-                admin_join_url = f'http://localhost:8008/_synapse/admin/v1/join/{room_id}'
+                admin_join_url = f'{synapse_url}/_synapse/admin/v1/join/{room_id}'
                 admin_response = requests.post(admin_join_url, headers=headers, json={'user_id': ADMIN_USER_ID}, timeout=5)
                 print(f"Admin join result: {admin_response.status_code}")
                 
@@ -1418,7 +1438,7 @@ def add_room_member(room_id):
         # Step 2: First try to INVITE the user (so they get notification)
         try:
             # Use Client API to invite (sends notification)
-            invite_url = f'http://localhost:8008/_matrix/client/r0/rooms/{room_id}/invite'
+            invite_url = f'{synapse_url}/_matrix/client/r0/rooms/{room_id}/invite'
             invite_payload = {'user_id': user_id}
             
             print(f"[1] Sending invite to {user_id} in room {room_id}...")
@@ -1428,7 +1448,7 @@ def add_room_member(room_id):
             if invite_response.status_code == 200:
                 # Invite successful - now auto-accept by joining them
                 print(f"[2] Now force-joining {user_id}...")
-                join_url = f'http://localhost:8008/_synapse/admin/v1/join/{room_id}'
+                join_url = f'{synapse_url}/_synapse/admin/v1/join/{room_id}'
                 join_response = requests.post(join_url, headers=headers, json={'user_id': user_id}, timeout=5)
                 print(f"[2] Force-join result: {join_response.status_code} - {join_response.text[:200]}")
                 
@@ -1448,7 +1468,7 @@ def add_room_member(room_id):
             
             # If invite failed, try direct admin join
             print(f"[3] Invite failed, trying direct admin join...")
-            api_url = f'http://localhost:8008/_synapse/admin/v1/join/{room_id}'
+            api_url = f'{synapse_url}/_synapse/admin/v1/join/{room_id}'
             response = requests.post(api_url, headers=headers, json={'user_id': user_id}, timeout=5)
             print(f"[3] Direct join result: {response.status_code} - {response.text[:200]}")
             
@@ -1976,15 +1996,39 @@ def create_room():
         cur.close()
         conn.close()
         
+        # If no token, try auto-login
+        import requests
+        synapse_url = os.getenv('SYNAPSE_URL', 'http://localhost:8008')
+        
+        if not admin_token:
+            admin_username = os.getenv('ADMIN_USERNAME', 'admin')
+            admin_password = os.getenv('ADMIN_PASSWORD')
+            
+            if admin_password:
+                print(f"[INFO] No admin token for room creation, attempting auto-login...")
+                try:
+                    login_response = requests.post(
+                        f'{synapse_url}/_matrix/client/v3/login',
+                        json={
+                            'type': 'm.login.password',
+                            'identifier': {'type': 'm.id.user', 'user': admin_username},
+                            'password': admin_password
+                        },
+                        timeout=10
+                    )
+                    if login_response.status_code == 200:
+                        admin_token = login_response.json().get('access_token')
+                        print(f"[INFO] Auto-login successful for room creation!")
+                except Exception as e:
+                    print(f"[WARN] Auto-login failed: {e}")
+        
         if not admin_token:
             return jsonify({
-                'error': 'Admin not logged in. Please login to http://localhost:5173 first',
+                'error': 'Admin not logged in. Please set ADMIN_PASSWORD environment variable.',
                 'success': False
             }), 401
         
         # Use Matrix Client API to create room (proper way!)
-        import requests
-        
         headers = {
             'Authorization': f'Bearer {admin_token}',
             'Content-Type': 'application/json'
@@ -1997,7 +2041,7 @@ def create_room():
             'room_version': '10'
         }
         
-        api_url = 'http://localhost:8008/_matrix/client/v3/createRoom'
+        api_url = f'{synapse_url}/_matrix/client/v3/createRoom'
         
         response = requests.post(api_url, headers=headers, json=create_room_body, timeout=10)
         
