@@ -4,12 +4,13 @@ FROM matrixdotorg/synapse:latest
 # Config dosyasını kopyala
 COPY synapse-railway-config/homeserver.yaml /config/homeserver.yaml
 
-# Başlangıç scripti
+# Başlangıç scripti - direkt içeriği Dockerfile'a ekle
 COPY synapse-railway-config/start.sh /start.sh
-RUN chmod +x /start.sh
+RUN chmod +x /start.sh && \
+    sed -i 's/\r$//' /start.sh
 
 EXPOSE 8008
 
-# Start script'i bash ile çalıştır
-CMD ["/bin/bash", "/start.sh"]
+# Start script'i sh ile çalıştır (bash yerine)
+CMD ["sh", "/start.sh"]
 
