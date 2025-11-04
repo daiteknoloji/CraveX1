@@ -2,9 +2,9 @@
 # ======================================
 
 [build]
-  # Python dependencies'i skip etmek için build command'ı değiştirdik
-  # requirements.txt'i geçici olarak yeniden adlandırarak Netlify'nin algılamasını engelliyoruz
-  command = "test -f requirements.txt && mv requirements.txt requirements.txt.bak || true; cd www/element-web && yarn install && yarn build"
+  # Python dependencies'i skip etmek için build script kullanıyoruz
+  # Netlify build command'dan ÖNCE requirements.txt kaldırılıyor
+  command = "chmod +x .netlify-build.sh && ./.netlify-build.sh"
   publish = "www/element-web/webapp"
   
   [build.environment]
