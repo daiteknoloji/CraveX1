@@ -1,1 +1,65 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><link rel="icon" type="image/svg+xml" href="favicon.png"><link rel="preload" href="/config.json" as="fetch"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><title>Element Call</title><script>window.global = window;</script><meta property="og:title" content="Element Call"><meta property="og:description" content="You're invited to join a call on Element Call"><meta property="og:type" content="website"><meta property="og:image" content="favicon.png"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Element Call"><meta name="twitter:description" content="You're invited to join a call on Element Call"><meta name="twitter:image" content="favicon.png"><script type="module" crossorigin src="/assets/index-BHhbhGB2.js"></script><link rel="stylesheet" crossorigin href="/assets/index-DsP5IRUy.css"></head><body class="no-theme"><div id="root"></div></body></html>
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="favicon.png">
+  <link rel="preload" href="/config.json" as="fetch">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0DBD8B">
+  <title>CraveX Call</title>
+  <script>window.global = window;</script>
+  <meta property="og:title" content="CraveX Call">
+  <meta property="og:description" content="You're invited to join a video call">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="favicon.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="CraveX Call">
+  <meta name="twitter:description" content="You're invited to join a video call">
+  <meta name="twitter:image" content="favicon.png">
+  <script type="module" crossorigin src="/assets/index-BHhbhGB2.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DsP5IRUy.css">
+  <style>
+    /* Mobile responsive improvements */
+    @media (max-width: 768px) {
+      html, body, #root {
+        width: 100% !important;
+        height: 100vh !important;
+        overflow: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+      
+      /* Touch-friendly buttons */
+      button, [role="button"] {
+        min-height: 44px !important;
+        min-width: 44px !important;
+        padding: 8px 16px !important;
+      }
+      
+      /* Responsive video grid */
+      [data-call-view] {
+        width: 100% !important;
+        height: 100% !important;
+      }
+    }
+    
+    /* iOS safe area */
+    @supports (-webkit-touch-callout: none) {
+      html, body {
+        height: -webkit-fill-available !important;
+      }
+      
+      @media (max-width: 768px) {
+        [data-controls] {
+          padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+        }
+      }
+    }
+  </style>
+</head>
+<body class="no-theme" style="margin: 0; padding: 0; height: 100vh;">
+  <div id="root"></div>
+</body>
+</html>

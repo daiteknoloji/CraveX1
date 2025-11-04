@@ -2,10 +2,10 @@
 # =========================================
 
 # Sunucu adı (domain veya localhost)
-server_name: "cravexv5-production.up.railway.app"
+server_name: "localhost"
 
 # Public baseurl
-public_baseurl: "https://cravexv5-production.up.railway.app/"
+public_baseurl: "http://localhost:8008/"
 
 # PID file
 pid_file: /data/homeserver.pid
@@ -31,22 +31,22 @@ listeners:
     resources:
       - names: [federation]
 
-# PostgreSQL Database - Railway uses environment variables
+# PostgreSQL Database - Local Docker
 database:
   name: psycopg2
   txn_limit: 10000
   allow_unsafe_locale: true
   args:
-    user: postgres
-    password: BttVVxjSQvmpfthXVfDCPtvQKBywBPuH
-    database: railway
+    user: synapse_user
+    password: SuperGucluSifre2024!
+    database: synapse
     host: postgres
     port: 5432
     cp_min: 5
     cp_max: 10
 
-# Logging - console only for Railway
-# log_config: "/data/localhost.log.config"
+# Logging
+log_config: "/data/localhost.log.config"
 
 # Media Store
 media_store_path: /data/media_store

@@ -663,9 +663,9 @@
         "stop_voice_message": "Stop recording",
         "voice_message_button": "Voice Message"
     },
-    "console_dev_note": "If you know what you're doing, Element is open-source, be sure to check out our GitHub (https://github.com/vector-im/element-web/) and contribute!",
-    "console_scam_warning": "If someone told you to copy/paste something here, there is a high likelihood you're being scammed!",
-    "console_wait": "Wait!",
+    "console_dev_note": "",
+    "console_scam_warning": "",
+    "console_wait": "",
     "create_room": {
         "action_create_room": "Create room",
         "action_create_video_room": "Create video room",
@@ -1716,7 +1716,7 @@
         "explore_rooms": "Explore Public Rooms",
         "has_avatar_label": "Great, that'll help people know it's you",
         "intro_byline": "Own your conversations.",
-        "intro_welcome": "Welcome to %(appName)s",
+        "intro_welcome": "Welcome",
         "no_avatar_label": "Add a photo so people know it's you.",
         "send_dm": "Send a Direct Message",
         "welcome_detail": "Now, let's help you get started",
@@ -4044,7 +4044,7 @@
         "you_are_presenting": "You are presenting"
     },
     "web_default_device_name": "%(appName)s: %(browserName)s on %(osName)s",
-    "welcome_to_element": "Welcome to Element",
+    "welcome_to_element": "Welcome",
     "widget": {
         "added_by": "Widget added by",
         "capabilities_dialog": {

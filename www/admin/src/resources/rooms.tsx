@@ -8,8 +8,19 @@ import ViewListIcon from "@mui/icons-material/ViewList";
 import RoomIcon from "@mui/icons-material/ViewList";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import MessageIcon from "@mui/icons-material/Message";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import Autocomplete from "@mui/material/Autocomplete";
+import { TextField as MuiTextField } from "@mui/material";
+import CircularProgress from "@mui/material/CircularProgress";
 import { useTheme } from "@mui/material/styles";
+import { useState } from "react";
 import {
   BooleanField,
   BulkDeleteButton,
@@ -37,6 +48,10 @@ import {
   TopToolbar,
   useRecordContext,
   useTranslate,
+  useDataProvider,
+  useRefresh,
+  useNotify,
+  useGetList,
 } from "react-admin";
 
 import {
@@ -46,6 +61,7 @@ import {
   RoomDirectoryPublishButton,
 } from "./room_directory";
 import { DATE_FORMAT } from "../components/date";
+import storage from "../storage";
 
 const RoomPagination = () => <Pagination rowsPerPageOptions={[10, 25, 50, 100, 500, 1000]} />;
 
@@ -80,6 +96,211 @@ const RoomShowActions = () => {
   );
 };
 
+// Join Room as Admin Button
+const JoinRoomAsAdminButton = () => {
+  const record = useRecordContext();
+  const dataProvider = useDataProvider();
+  const refresh = useRefresh();
+  const notify = useNotify();
+  const translate = useTranslate();
+
+  const handleJoin = async () => {
+    if (!record?.room_id) return;
+
+    const currentUser = storage.getItem("user_id");
+    if (!currentUser) return;
+
+    try {
+      await dataProvider.addRoomMember({
+        room_id: record.room_id,
+        user_id: currentUser,
+      });
+      notify(translate("resources.rooms.action.joined_room", { _: "You joined the room!" }), { 
+        type: "success" 
+      });
+      refresh();
+    } catch (error: any) {
+      notify(error.message || translate("ra.notification.http_error", { _: "Error joining room" }), { 
+        type: "error" 
+      });
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleJoin}
+      variant="outlined"
+      startIcon={<PersonAddIcon />}
+      size="small"
+      color="primary"
+      sx={{ marginRight: 2 }}
+    >
+      {translate("resources.rooms.action.join_as_admin", { _: "Join Room as Admin" })}
+    </Button>
+  );
+};
+
+// Add Member Button Component
+const AddMemberButton = () => {
+  const record = useRecordContext();
+  const [open, setOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const dataProvider = useDataProvider();
+  const refresh = useRefresh();
+  const notify = useNotify();
+  const translate = useTranslate();
+
+  // Fetch users list
+  const { data: users, isLoading } = useGetList("users", {
+    pagination: { page: 1, perPage: 100 },
+    sort: { field: "name", order: "ASC" },
+    filter: { deactivated: false },
+  });
+
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedUser(null);
+  };
+
+  const handleAdd = async () => {
+    if (!selectedUser || !record?.room_id) return;
+
+    try {
+      await dataProvider.addRoomMember({
+        room_id: record.room_id,
+        user_id: selectedUser.id,
+      });
+      notify(translate("ra.notification.created", { smart_count: 1, _: "Member added successfully" }), { 
+        type: "success" 
+      });
+      handleClose();
+      refresh();
+    } catch (error: any) {
+      notify(error.message || translate("ra.notification.http_error", { _: "Error adding member" }), { 
+        type: "error" 
+      });
+    }
+  };
+
+  return (
+    <>
+      <Button
+        onClick={handleOpen}
+        startIcon={<PersonAddIcon />}
+        size="small"
+        sx={{ marginLeft: 2 }}
+      >
+        {translate("resources.rooms.action.add_member", { _: "Add Member" })}
+      </Button>
+      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+        <DialogTitle>{translate("resources.rooms.action.add_member", { _: "Add Member" })}</DialogTitle>
+        <DialogContent>
+          <Box sx={{ paddingTop: 2 }}>
+            <Autocomplete
+              options={users || []}
+              getOptionLabel={(option: any) => option.displayname || option.id || ""}
+              loading={isLoading}
+              value={selectedUser}
+              onChange={(event, newValue) => setSelectedUser(newValue)}
+              renderInput={(params) => (
+                <MuiTextField
+                  {...params}
+                  label={translate("resources.users.name", { smart_count: 1, _: "User" })}
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {isLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  }}
+                />
+              )}
+              fullWidth
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>
+            {translate("ra.action.cancel", { _: "Cancel" })}
+          </Button>
+          <Button onClick={handleAdd} variant="contained" disabled={!selectedUser}>
+            {translate("ra.action.add", { _: "Add" })}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+};
+
+// Remove Member Button Component
+const RemoveMemberButton = ({ userId }: { userId: string }) => {
+  const record = useRecordContext();
+  const [open, setOpen] = useState(false);
+  const dataProvider = useDataProvider();
+  const refresh = useRefresh();
+  const notify = useNotify();
+  const translate = useTranslate();
+
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+
+  const handleRemove = async () => {
+    if (!record?.room_id || !userId) return;
+
+    try {
+      await dataProvider.removeRoomMember({
+        room_id: record.room_id,
+        user_id: userId,
+        reason: "Removed by admin",
+      });
+      notify(translate("ra.notification.deleted", { smart_count: 1, _: "Member removed successfully" }), { 
+        type: "success" 
+      });
+      handleClose();
+      refresh();
+    } catch (error: any) {
+      notify(error.message || translate("ra.notification.http_error", { _: "Error removing member" }), { 
+        type: "error" 
+      });
+    }
+  };
+
+  return (
+    <>
+      <Button
+        onClick={handleOpen}
+        startIcon={<RemoveCircleIcon />}
+        size="small"
+        color="error"
+      >
+        {translate("ra.action.remove", { _: "Remove" })}
+      </Button>
+      <Dialog open={open} onClose={handleClose}>
+        <DialogTitle>{translate("resources.rooms.action.remove_member", { _: "Remove Member" })}</DialogTitle>
+        <DialogContent>
+          <Box sx={{ padding: 2 }}>
+            {translate("resources.rooms.action.remove_member_confirm", {
+              _: "Are you sure you want to remove this member from the room?",
+            })}
+          </Box>
+          <Box sx={{ paddingLeft: 2, fontWeight: "bold" }}>{userId}</Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>
+            {translate("ra.action.cancel", { _: "Cancel" })}
+          </Button>
+          <Button onClick={handleRemove} variant="contained" color="error">
+            {translate("ra.action.remove", { _: "Remove" })}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+};
+
 export const RoomShow = (props: ShowProps) => {
   const translate = useTranslate();
   return (
@@ -105,6 +326,10 @@ export const RoomShow = (props: ShowProps) => {
         </Tab>
 
         <Tab label="synapseadmin.rooms.tabs.members" icon={<UserIcon />} path="members">
+          <Box sx={{ display: "flex", alignItems: "center", marginBottom: 2, gap: 1 }}>
+            <JoinRoomAsAdminButton />
+            <AddMemberButton />
+          </Box>
           <ReferenceManyField reference="room_members" target="room_id" label={false}>
             <Datagrid style={{ width: "100%" }} rowClick={id => "/users/" + id} bulkActionButtons={false}>
               <TextField source="id" sortable={false} label="resources.users.fields.id" />
@@ -117,6 +342,11 @@ export const RoomShow = (props: ShowProps) => {
               >
                 <TextField source="displayname" sortable={false} />
               </ReferenceField>
+              <FunctionField
+                label="resources.rooms.fields.actions"
+                sortable={false}
+                render={(record: any) => <RemoveMemberButton userId={record.id} />}
+              />
             </Datagrid>
           </ReferenceManyField>
         </Tab>

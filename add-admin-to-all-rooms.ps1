@@ -1,106 +1,98 @@
-# Admin Kullanıcısını Tüm Odalara Ekle
-# ======================================
+# Add admin user to ALL rooms automatically
+# This solves the problem of admin not being able to add members to rooms they're not in
 
-Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "ADMIN TUM ODALARA EKLENIYOR..." -ForegroundColor Cyan
+Write-Host "Add Admin to ALL Rooms" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Admin token al
-$body = @{
-    type = "m.login.password"
-    user = "@admin:localhost"
-    password = "Admin@2024!Guclu"
-} | ConvertTo-Json
+$workspacePath = "C:\Users\Can Cakir\Desktop\www-backup"
+cd $workspacePath
 
-try {
-    $loginResponse = Invoke-RestMethod -Uri "http://localhost:8008/_matrix/client/r0/login" `
-                                        -Method Post `
-                                        -Body $body `
-                                        -ContentType "application/json"
-    $token = $loginResponse.access_token
-    Write-Host "[1/3] Admin token alindi" -ForegroundColor Green
-} catch {
-    Write-Host "HATA: Token alinamadi!" -ForegroundColor Red
-    Write-Host "$($_.Exception.Message)" -ForegroundColor Red
-    exit
+# Get all rooms from database
+Write-Host "Fetching all rooms..." -ForegroundColor Yellow
+$rooms = docker exec matrix-postgres psql -U synapse_user -d synapse -t -c "SELECT DISTINCT room_id FROM rooms WHERE is_public = true OR room_id IN (SELECT room_id FROM room_memberships WHERE user_id LIKE '%k:localhost' OR user_id LIKE '%admin%');" 2>$null
+
+if (-not $rooms) {
+    Write-Host "ERROR: Could not fetch rooms!" -ForegroundColor Red
+    exit 1
 }
 
-# Tüm odaları listele
-$headers = @{
-    "Authorization" = "Bearer $token"
-}
-
-try {
-    Write-Host "[2/3] Odalar listeleniyor..." -ForegroundColor Yellow
-    $roomsResponse = Invoke-RestMethod -Uri "http://localhost:8008/_synapse/admin/v1/rooms" `
-                                        -Method Get `
-                                        -Headers $headers
-    
-    $rooms = $roomsResponse.rooms
-    Write-Host "Toplam $($rooms.Count) oda bulundu" -ForegroundColor White
-} catch {
-    Write-Host "HATA: Odalar listelenemedi!" -ForegroundColor Red
-    Write-Host "$($_.Exception.Message)" -ForegroundColor Red
-    exit
-}
-
-# Her odaya admin'i ekle
-Write-Host "[3/3] Admin tum odalara ekleniyor..." -ForegroundColor Yellow
+$roomList = $rooms -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" }
+Write-Host "Found $($roomList.Count) rooms" -ForegroundColor Green
 Write-Host ""
 
+# Get admin token
+Write-Host "Getting admin token..." -ForegroundColor Yellow
+$adminToken = docker exec matrix-postgres psql -U synapse_user -d synapse -t -c "SELECT token FROM access_tokens WHERE user_id = '@admin:localhost' ORDER BY id DESC LIMIT 1;" 2>$null | ForEach-Object { $_.Trim() }
+
+if (-not $adminToken) {
+    Write-Host "ERROR: Could not get admin token!" -ForegroundColor Red
+    Write-Host "Please login to admin panel first." -ForegroundColor Yellow
+    exit 1
+}
+
+Write-Host "Admin token found!" -ForegroundColor Green
+Write-Host ""
+
+# Process each room
 $successCount = 0
-$errorCount = 0
-$alreadyJoinedCount = 0
+$skipCount = 0
+$failCount = 0
 
-foreach ($room in $rooms) {
-    $roomId = $room.room_id
-    $roomName = if ($room.name) { $room.name } else { $room.canonical_alias }
-    if (-not $roomName) { $roomName = $roomId }
+foreach ($roomId in $roomList) {
+    if ([string]::IsNullOrWhiteSpace($roomId)) { continue }
     
-    Write-Host "  Oda: $roomName" -NoNewline
+    Write-Host "Room: $roomId" -ForegroundColor Cyan
+    
+    # Check if admin already in room
+    $isMember = docker exec matrix-postgres psql -U synapse_user -d synapse -t -c "SELECT COUNT(*) FROM room_memberships WHERE room_id = '$roomId' AND user_id = '@admin:localhost' AND membership = 'join';" 2>$null | ForEach-Object { $_.Trim() }
+    
+    if ($isMember -gt 0) {
+        Write-Host "  [OK] Admin already a member, skipping..." -ForegroundColor Gray
+        $skipCount++
+        continue
+    }
+    
+    # Get a member from the room to invite admin
+    $member = docker exec matrix-postgres psql -U synapse_user -d synapse -t -c "SELECT user_id FROM room_memberships WHERE room_id = '$roomId' AND membership = 'join' LIMIT 1;" 2>$null | ForEach-Object { $_.Trim() }
+    
+    if (-not $member) {
+        Write-Host "  [FAIL] No members in room, skipping..." -ForegroundColor Yellow
+        $failCount++
+        continue
+    }
     
     try {
-        # Önce normal join dene
-        try {
-            Invoke-RestMethod -Uri "http://localhost:8008/_matrix/client/r0/rooms/${roomId}/join" `
-                              -Method Post `
-                              -Headers $headers `
-                              -Body "{}" `
-                              -ContentType "application/json" `
-                              -ErrorAction Stop | Out-Null
-            
-            Write-Host " - EKLENDI" -ForegroundColor Green
-            $successCount++
-        } catch {
-            # Normal join olmadı, Admin API ile force join dene
-            # user_id JSON body'de (query param değil!)
-            $joinBody = @{ user_id = "@admin:localhost" } | ConvertTo-Json
-            $forceUrl = "http://localhost:8008/_synapse/admin/v1/join/${roomId}"
-            
-            try {
-                Invoke-RestMethod -Uri $forceUrl `
-                                  -Method Post `
-                                  -Headers $headers `
-                                  -Body $joinBody `
-                                  -ContentType "application/json" `
-                                  -ErrorAction Stop | Out-Null
-                
-                Write-Host " - ZORLA EKLENDI" -ForegroundColor Yellow
-                $successCount++
-            } catch {
-                # Force join de olmadı, kullanıcıdan davet gerekli
-                throw $_
-            }
+        # Use admin API to force join directly
+        $adminHeaders = @{
+            "Authorization" = "Bearer $adminToken"
+            "Content-Type" = "application/json"
         }
+        
+        $joinUrl = "http://localhost:8008/_synapse/admin/v1/join/$([uri]::EscapeDataString($roomId))"
+        $joinBody = @{
+            user_id = "@admin:localhost"
+        } | ConvertTo-Json
+        
+        Invoke-RestMethod -Uri $joinUrl -Headers $adminHeaders -Method POST -Body $joinBody -ErrorAction Stop | Out-Null
+        
+        Write-Host "  [SUCCESS] Admin added successfully!" -ForegroundColor Green
+        $successCount++
+        
     } catch {
-        if ($_.Exception.Message -like "*already*") {
-            Write-Host " - ZATEN UYESI" -ForegroundColor Gray
-            $alreadyJoinedCount++
+        $errorMsg = $_.Exception.Message
+        
+        # If 403, admin needs to be in room first - try alternative method
+        if ($errorMsg -like "*403*" -or $errorMsg -like "*Forbidden*") {
+            Write-Host "  [SKIP] Admin cannot join (need room admin power)" -ForegroundColor Yellow
+            $failCount++
+        } elseif ($errorMsg -like "*already*" -or $errorMsg -like "*409*") {
+            Write-Host "  [OK] Admin already joined" -ForegroundColor Green
+            $successCount++
         } else {
-            Write-Host " - HATA: $($_.Exception.Message)" -ForegroundColor Red
-            $errorCount++
+            Write-Host "  [ERROR] Failed: $errorMsg" -ForegroundColor Red
+            $failCount++
         }
     }
     
@@ -108,19 +100,11 @@ foreach ($room in $rooms) {
 }
 
 Write-Host ""
-Write-Host "========================================" -ForegroundColor Green
-Write-Host "TAMAMLANDI!" -ForegroundColor Green
-Write-Host "========================================" -ForegroundColor Green
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "Summary:" -ForegroundColor Yellow
+Write-Host "  [+] Successfully added: $successCount" -ForegroundColor Green
+Write-Host "  [-] Already member:     $skipCount" -ForegroundColor Gray
+Write-Host "  [X] Failed:             $failCount" -ForegroundColor Red
 Write-Host ""
-Write-Host "Sonuclar:" -ForegroundColor Cyan
-Write-Host "  Basariyla eklendi: $successCount" -ForegroundColor Green
-Write-Host "  Zaten uyeydi: $alreadyJoinedCount" -ForegroundColor Gray
-Write-Host "  Hata: $errorCount" -ForegroundColor Red
-Write-Host "  Toplam: $($rooms.Count)" -ForegroundColor White
-Write-Host ""
-Write-Host "Admin panelde artik tum odalardaki mesajlari gorebilirsiniz!" -ForegroundColor Cyan
-Write-Host "http://localhost:5173" -ForegroundColor Gray
-Write-Host ""
-
-
-
+Write-Host "Done! Admin can now manage members in all rooms." -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan

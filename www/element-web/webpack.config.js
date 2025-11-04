@@ -736,6 +736,9 @@ module.exports = (env, argv) => {
 
         // configuration for the webpack-dev-server
         devServer: {
+            // Allow access from other devices on the same network
+            host: "0.0.0.0",
+            
             client: {
                 overlay: {
                     // Only show overlay on build errors as anything more can get annoying quickly

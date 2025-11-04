@@ -1,1 +1,4 @@
-{}
+{
+  "restrictBaseUrl": "https://cravex1-production.up.railway.app",
+  "asManagedUsers": false
+}

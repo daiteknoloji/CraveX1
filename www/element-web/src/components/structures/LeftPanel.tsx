@@ -54,6 +54,7 @@ interface IState {
     showBreadcrumbs: BreadcrumbsMode;
     activeSpace: SpaceKey;
     supportsPstnProtocol: boolean;
+    mobileMenuOpen: boolean;
 }
 
 export default class LeftPanel extends React.Component<IProps, IState> {
@@ -61,6 +62,7 @@ export default class LeftPanel extends React.Component<IProps, IState> {
     private roomListRef = createRef<LegacyRoomList>();
     private focusedElement: Element | null = null;
     private isDoingStickyHeaders = false;
+    private dispatcherRef: string | null = null;
 
     public constructor(props: IProps) {
         super(props);
@@ -69,6 +71,7 @@ export default class LeftPanel extends React.Component<IProps, IState> {
             activeSpace: SpaceStore.instance.activeSpace,
             showBreadcrumbs: LeftPanel.breadcrumbsMode,
             supportsPstnProtocol: LegacyCallHandler.instance.getSupportsPstnProtocol(),
+            mobileMenuOpen: false,
         };
     }
 
@@ -89,6 +92,9 @@ export default class LeftPanel extends React.Component<IProps, IState> {
             this.listContainerRef.current.addEventListener("scroll", this.onScroll, { passive: true });
         }
         UIStore.instance.on("ListContainer", this.refreshStickyHeaders);
+        
+        // Register dispatcher for mobile menu toggle
+        this.dispatcherRef = dis.register(this.onAction);
     }
 
     public componentWillUnmount(): void {
@@ -99,6 +105,11 @@ export default class LeftPanel extends React.Component<IProps, IState> {
         UIStore.instance.stopTrackingElementDimensions("ListContainer");
         UIStore.instance.removeListener("ListContainer", this.refreshStickyHeaders);
         this.listContainerRef.current?.removeEventListener("scroll", this.onScroll);
+        
+        // Unregister dispatcher
+        if (this.dispatcherRef) {
+            dis.unregister(this.dispatcherRef);
+        }
     }
 
     public componentDidUpdate(prevProps: IProps, prevState: IState): void {
@@ -113,6 +124,16 @@ export default class LeftPanel extends React.Component<IProps, IState> {
 
     private updateActiveSpace = (activeSpace: SpaceKey): void => {
         this.setState({ activeSpace });
+    };
+
+    private onAction = (payload: any): void => {
+        if (payload.action === "toggle_mobile_left_panel") {
+            this.setState({ mobileMenuOpen: !this.state.mobileMenuOpen });
+        }
+    };
+
+    private closeMobileMenu = (): void => {
+        this.setState({ mobileMenuOpen: false });
     };
 
     private onDialPad = (): void => {
@@ -384,16 +405,22 @@ export default class LeftPanel extends React.Component<IProps, IState> {
             mx_LeftPanel: true,
             mx_LeftPanel_newRoomList: useNewRoomList,
             mx_LeftPanel_minimized: this.props.isMinimized,
+            mx_LeftPanel_mobileOpen: this.state.mobileMenuOpen,
         });
 
         const roomListClasses = classNames("mx_LeftPanel_actualRoomListContainer", "mx_AutoHideScrollbar");
         if (useNewRoomList) {
             return (
-                <div className={containerClasses}>
-                    <div className="mx_LeftPanel_roomListContainer">
-                        <RoomListPanel activeSpace={this.state.activeSpace} />
+                <>
+                    <div className={containerClasses}>
+                        <div className="mx_LeftPanel_roomListContainer">
+                            <RoomListPanel activeSpace={this.state.activeSpace} />
+                        </div>
                     </div>
-                </div>
+                    {this.state.mobileMenuOpen && (
+                        <div className="mx_LeftPanel_mobileOverlay" onClick={this.closeMobileMenu} />
+                    )}
+                </>
             );
         }
 
@@ -412,24 +439,29 @@ export default class LeftPanel extends React.Component<IProps, IState> {
         );
 
         return (
-            <div className={containerClasses}>
-                <div className="mx_LeftPanel_roomListContainer">
-                    {shouldShowComponent(UIComponent.FilterContainer) && this.renderSearchDialExplore()}
-                    {this.renderBreadcrumbs()}
-                    {!this.props.isMinimized && <LegacyRoomListHeader onVisibilityChange={this.refreshStickyHeaders} />}
-                    <nav className="mx_LeftPanel_roomListWrapper" aria-label={_t("common|rooms")}>
-                        <div
-                            className={roomListClasses}
-                            ref={this.listContainerRef}
-                            // Firefox sometimes makes this element focusable due to
-                            // overflow:scroll;, so force it out of tab order.
-                            tabIndex={-1}
-                        >
-                            {roomList}
-                        </div>
-                    </nav>
+            <>
+                <div className={containerClasses}>
+                    <div className="mx_LeftPanel_roomListContainer">
+                        {shouldShowComponent(UIComponent.FilterContainer) && this.renderSearchDialExplore()}
+                        {this.renderBreadcrumbs()}
+                        {!this.props.isMinimized && <LegacyRoomListHeader onVisibilityChange={this.refreshStickyHeaders} />}
+                        <nav className="mx_LeftPanel_roomListWrapper" aria-label={_t("common|rooms")}>
+                            <div
+                                className={roomListClasses}
+                                ref={this.listContainerRef}
+                                // Firefox sometimes makes this element focusable due to
+                                // overflow:scroll;, so force it out of tab order.
+                                tabIndex={-1}
+                            >
+                                {roomList}
+                            </div>
+                        </nav>
+                    </div>
                 </div>
-            </div>
+                {this.state.mobileMenuOpen && (
+                    <div className="mx_LeftPanel_mobileOverlay" onClick={this.closeMobileMenu} />
+                )}
+            </>
         );
     }
 }

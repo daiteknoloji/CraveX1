@@ -1,4 +1,4 @@
-import { stringify } from "query-string";
+msajl{ stringify } from "query-string";
 import {
   DataProvider,
   DeleteParams,
@@ -239,8 +239,21 @@ export interface DeleteMediaResult {
   total: number;
 }
 
+export interface AddRoomMemberParams {
+  room_id: string;
+  user_id: string;
+}
+
+export interface RemoveRoomMemberParams {
+  room_id: string;
+  user_id: string;
+  reason?: string;
+}
+
 export interface SynapseDataProvider extends DataProvider {
   deleteMedia: (params: DeleteMediaParams) => Promise<DeleteMediaResult>;
+  addRoomMember: (params: AddRoomMemberParams) => Promise<{ room_id: string }>;
+  removeRoomMember: (params: RemoveRoomMemberParams) => Promise<{ room_id: string }>;
 }
 
 const resourceMap = {
@@ -796,6 +809,130 @@ const dataProvider: SynapseDataProvider = {
     const endpoint_url = base_url + endpoint;
     const { json } = await jsonClient(endpoint_url, { method: "POST" });
     return json as DeleteMediaResult;
+  },
+
+  /**
+   * Add a user to a room using admin state event manipulation
+   * 
+   * @link https://matrix-org.github.io/synapse/latest/admin_api/rooms.html#make-room-admin-api
+   * 
+   * @param room_id The room ID to add the user to
+   * @param user_id The user ID to add to the room
+   * @returns The room ID
+   */
+  addRoomMember: async ({ room_id, user_id }) => {
+    const base_url = storage.getItem("base_url");
+    const admin_user = storage.getItem("user_id");
+    const joinEndpoint = `/_synapse/admin/v1/join/${encodeURIComponent(room_id)}`;
+    const joinUrl = base_url + joinEndpoint;
+    
+    try {
+      // Try to add the user directly
+      const { json } = await jsonClient(joinUrl, {
+        method: "POST",
+        body: JSON.stringify({ user_id }),
+      });
+      return { room_id: json.room_id || room_id };
+    } catch (error: any) {
+      // Check if error is because admin not in room
+      const errorMessage = error.message || "";
+      const errorBody = typeof error.body === "string" ? error.body : JSON.stringify(error.body || "");
+      const isAdminNotInRoom = 
+        errorMessage.includes("not in room") || 
+        errorBody.includes("not in room") ||
+        (error.status === 403 && (errorMessage.includes(admin_user) || errorBody.includes(admin_user)));
+      
+      if (isAdminNotInRoom) {
+        console.log("Admin not in room - Auto-adding admin first, then target user...");
+        
+        try {
+          // Step 1: Force admin to join the room using admin API
+          console.log("Step 1: Adding admin to room...");
+          await jsonClient(joinUrl, {
+            method: "POST",
+            body: JSON.stringify({ user_id: admin_user }),
+          });
+          
+          console.log("Admin joined! Now adding target user...");
+          
+          // Step 2: Now add the target user
+          const { json } = await jsonClient(joinUrl, {
+            method: "POST",
+            body: JSON.stringify({ user_id }),
+          });
+          
+          return { room_id: json.room_id || room_id };
+        } catch (autoJoinError: any) {
+          console.error("Auto-join failed:", autoJoinError);
+          
+          // If still failing, show helpful error
+          throw new Error(
+            `Cannot add member to this room. This room may have special permissions. ` +
+            `Try adding admin (@${admin_user}) to this room via Element Web first.`
+          );
+        }
+      }
+      
+      // Other errors, just throw
+      throw error;
+    }
+  },
+
+  /**
+   * Remove a user from a room (kick)
+   * 
+   * @link https://spec.matrix.org/v1.1/client-server-api/#leaving-rooms
+   * 
+   * @param room_id The room ID to remove the user from
+   * @param user_id The user ID to remove from the room
+   * @param reason Optional reason for removing the user
+   * @returns The room ID
+   */
+  removeRoomMember: async ({ room_id, user_id, reason = "Removed by admin" }) => {
+    const base_url = storage.getItem("base_url");
+    
+    // Try client API kick first
+    const kickEndpoint = `/_matrix/client/v3/rooms/${encodeURIComponent(room_id)}/kick`;
+    const kickUrl = base_url + kickEndpoint;
+    
+    try {
+      await jsonClient(kickUrl, {
+        method: "POST",
+        body: JSON.stringify({ user_id, reason }),
+      });
+      return { room_id };
+    } catch (error: any) {
+      // If kick fails, try ban then unban (this leaves them out of room)
+      console.log("Kick failed, trying ban method...", error);
+      
+      try {
+        // Ban the user
+        const banEndpoint = `/_matrix/client/v3/rooms/${encodeURIComponent(room_id)}/ban`;
+        const banUrl = base_url + banEndpoint;
+        
+        await jsonClient(banUrl, {
+          method: "POST",
+          body: JSON.stringify({ user_id, reason }),
+        });
+        
+        // Optionally unban (so they can rejoin if invited)
+        const unbanEndpoint = `/_matrix/client/v3/rooms/${encodeURIComponent(room_id)}/unban`;
+        const unbanUrl = base_url + unbanEndpoint;
+        
+        await jsonClient(unbanUrl, {
+          method: "POST",
+          body: JSON.stringify({ user_id }),
+        });
+        
+        return { room_id };
+      } catch (banError: any) {
+        const errorMessage = banError.message || "";
+        throw new Error(
+          `Cannot remove member: ${errorMessage}. ` +
+          `Admin must be a member of this room with sufficient power level.`
+        );
+      }
+    }
   },
 };
 

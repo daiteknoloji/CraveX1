@@ -644,9 +644,9 @@
         "stop_voice_message": "Kaydı durdur",
         "voice_message_button": "Sesli Mesaj"
     },
-    "console_dev_note": "Ne yaptığınızı biliyorsanız, Element açık kaynaklıdır, GitHub'ımıza (https://github.com/vector-im/element-web/) göz atmayı ve katkıda bulunmayı unutmayın!",
-    "console_scam_warning": "Birisi size buraya bir şey kopyalayıp yapıştırmanızı söylediyse, dolandırılıyor olma olasılığınız yüksektir!",
-    "console_wait": "Bekle!",
+    "console_dev_note": "",
+    "console_scam_warning": "",
+    "console_wait": "",
     "create_room": {
         "action_create_room": "Oda oluştur",
         "action_create_video_room": "Video odası oluştur",
@@ -1650,7 +1650,7 @@
         "explore_rooms": "Herkese açık odaları keşfet",
         "has_avatar_label": "Harika, bu insanların sen olduğunu anlamalarına yardımcı olur.",
         "intro_byline": "Konuşmalarınıza sahip çıkın.",
-        "intro_welcome": "%(appName)s' e Hoş geldiniz",
+        "intro_welcome": "Hoş geldiniz",
         "no_avatar_label": "İnsanların kimliğinizi anlaması için bir fotoğraf ekleyin.",
         "send_dm": "Doğrudan Mesaj Gönder",
         "welcome_detail": "Şimdi, başlamanıza yardım edelim",
@@ -3888,7 +3888,7 @@
         "you_are_presenting": "Sunum yapıyorsunuz"
     },
     "web_default_device_name": "%(appName)s: %(browserName)s %(osName)s",
-    "welcome_to_element": "Element'e Hoş Geldiniz",
+    "welcome_to_element": "Hoş Geldiniz",
     "widget": {
         "added_by": "Widget ekleyen",
         "capabilities_dialog": {

@@ -1,81 +1,72 @@
-# Admin'i Odaya Ekle
-# ====================
+# Add admin user to a specific room
+# Usage: .\ADD-ADMIN-TO-ROOM.ps1
 
 param(
-    [string]$RoomId = "!YmULXuAoAFcYvWeQQG:localhost",
-    [string]$UserId = "@admin:localhost"
+    [string]$RoomId = "!CQAmxEKSiSBGkjlrlu:localhost"
 )
 
-Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "ADMIN ODAYA EKLENIYOR..." -ForegroundColor Cyan
+Write-Host "Add Admin to Room" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Oda ID: $RoomId" -ForegroundColor Yellow
-Write-Host "Kullanici: $UserId" -ForegroundColor Yellow
-Write-Host ""
 
-# Token al
-Write-Host "[1/2] Token aliniyor..." -ForegroundColor Yellow
+# PostgreSQL'den admin token al
+Write-Host "Getting admin access token..." -ForegroundColor Yellow
 
-$body = @{
-    type = "m.login.password"
-    user = $UserId
-    password = "Admin@2024!Guclu"
-} | ConvertTo-Json
+$token = docker exec matrix-postgres psql -U synapse_user -d synapse -t -c "SELECT token FROM access_tokens WHERE user_id = '@admin:localhost' ORDER BY id DESC LIMIT 1;" 2>$null
+$token = $token.Trim()
 
-try {
-    Start-Sleep -Seconds 2
-    $loginResponse = Invoke-RestMethod -Uri "http://localhost:8008/_matrix/client/r0/login" `
-                                        -Method Post `
-                                        -Body $body `
-                                        -ContentType "application/json"
-    $token = $loginResponse.access_token
-    Write-Host "   Token alindi!" -ForegroundColor Green
-} catch {
-    Write-Host "   HATA: Token alinamadi!" -ForegroundColor Red
-    Write-Host "   $($_.Exception.Message)" -ForegroundColor Red
-    exit
+if ([string]::IsNullOrEmpty($token)) {
+    Write-Host "ERROR: Could not get admin token!" -ForegroundColor Red
+    Write-Host "Please login to admin panel first." -ForegroundColor Yellow
+    exit 1
 }
 
-# Odaya katil
+Write-Host "Token found!" -ForegroundColor Green
+Write-Host "Room ID: $RoomId" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "[2/2] Odaya katiliniyor..." -ForegroundColor Yellow
 
-$headers = @{
-    "Authorization" = "Bearer $token"
-}
-
-$joinBody = @{} | ConvertTo-Json
+# Admin kullanıcısını odaya ekle
+Write-Host "Adding admin user to room..." -ForegroundColor Yellow
 
 try {
-    $joinResponse = Invoke-RestMethod -Uri "http://localhost:8008/_matrix/client/r0/rooms/$RoomId/join" `
-                                       -Method Post `
-                                       -Headers $headers `
-                                       -Body $joinBody `
-                                       -ContentType "application/json"
+    $headers = @{
+        "Authorization" = "Bearer $token"
+        "Content-Type" = "application/json"
+    }
     
-    Write-Host "   OK Admin odaya eklendi!" -ForegroundColor Green
+    $body = @{
+        user_id = "@admin:localhost"
+    } | ConvertTo-Json
+    
+    $url = "http://localhost:8008/_synapse/admin/v1/join/$([uri]::EscapeDataString($RoomId))"
+    
+    Write-Host "URL: $url" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "========================================" -ForegroundColor Green
-    Write-Host "BASARILI!" -ForegroundColor Green
-    Write-Host "========================================" -ForegroundColor Green
+    
+    $response = Invoke-RestMethod -Uri $url -Headers $headers -Method POST -Body $body -ErrorAction Stop
+    
     Write-Host ""
-    Write-Host "Artik Element Web'de bu odayi gorebilirsin:" -ForegroundColor Cyan
-    Write-Host "  http://localhost:8080/#/room/$RoomId" -ForegroundColor White
+    Write-Host "SUCCESS! Admin added to room!" -ForegroundColor Green
+    Write-Host "Room ID: $($response.room_id)" -ForegroundColor White
     Write-Host ""
+    Write-Host "Now you can add other members from the admin panel!" -ForegroundColor Cyan
     
 } catch {
-    Write-Host "   HATA: Odaya eklenemedi!" -ForegroundColor Red
-    Write-Host "   $($_.Exception.Message)" -ForegroundColor Red
+    $statusCode = $_.Exception.Response.StatusCode.value__
+    $errorMessage = $_.Exception.Message
+    
+    Write-Host ""
+    Write-Host "ERROR: Could not add admin to room" -ForegroundColor Red
+    Write-Host "Status Code: $statusCode" -ForegroundColor Yellow
+    Write-Host "Message: $errorMessage" -ForegroundColor Yellow
     Write-Host ""
     
-    if ($_.Exception.Message -like "*already*" -or $_.Exception.Message -like "*M_FORBIDDEN*") {
-        Write-Host "   Not: Kullanici zaten bu odanin uyesi olabilir." -ForegroundColor Yellow
-        Write-Host "   Veya odaya katilma izni olmayabilir (private oda)." -ForegroundColor Yellow
-        Write-Host ""
-        Write-Host "   Cozum: Oda sahibi admin'i davet etmeli!" -ForegroundColor Cyan
+    # Eğer admin zaten odadaysa
+    if ($statusCode -eq 409 -or $errorMessage -like "*already*") {
+        Write-Host "Admin is already in the room!" -ForegroundColor Green
     }
 }
 
 Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan

@@ -1,28 +1,39 @@
-# Matrix Synapse Admin Kullanıcı Oluşturma
-# Bu script interaktif, kullanıcı adı ve şifre girmeniz gerekecek
+$username = "admin"
+$password = "Admin@2024!Guclu"
+$synapseUrl = "https://cravex1-production.up.railway.app"
+$sharedSecret = "SuperGizliKayit2024!XyZ123aBc"
 
-Write-Host "==================================" -ForegroundColor Cyan
-Write-Host "Matrix Synapse Admin Kullanıcı Oluşturma" -ForegroundColor Cyan
-Write-Host "==================================" -ForegroundColor Cyan
+Write-Host "Creating admin user..." -ForegroundColor Cyan
+
+# Get nonce
+$nonceUrl = "$synapseUrl/_synapse/admin/v1/register"
+$nonceResponse = Invoke-RestMethod -Uri $nonceUrl -Method GET
+$nonce = $nonceResponse.nonce
+
+Write-Host "Nonce received: $nonce" -ForegroundColor Green
+
+# Calculate HMAC
+$hmac = New-Object System.Security.Cryptography.HMACSHA1
+$hmac.key = [Text.Encoding]::UTF8.GetBytes($sharedSecret)
+$message = "$nonce`0$username`0$password`0admin"
+$signature = $hmac.ComputeHash([Text.Encoding]::UTF8.GetBytes($message))
+$mac = [System.BitConverter]::ToString($signature).Replace("-","").ToLower()
+
+# Create user
+$body = @{
+    nonce = $nonce
+    username = $username
+    password = $password
+    admin = $true
+    mac = $mac
+} | ConvertTo-Json
+
+$response = Invoke-RestMethod -Uri $nonceUrl -Method POST -Body $body -ContentType "application/json"
+
 Write-Host ""
-Write-Host "Kullanıcı adı (örn: admin): " -NoNewline -ForegroundColor Yellow
-$username = Read-Host
-
-Write-Host "Şifre: " -NoNewline -ForegroundColor Yellow
-$password = Read-Host -AsSecureString
-
+Write-Host "SUCCESS! Admin user created:" -ForegroundColor Green
+Write-Host "Username: @admin:cravex1-production.up.railway.app" -ForegroundColor White
+Write-Host "Password: $password" -ForegroundColor White
 Write-Host ""
-Write-Host "Admin kullanıcı oluşturuluyor..." -ForegroundColor Green
-
-# Docker exec komutu
-docker exec -it matrix-synapse register_new_matrix_user http://localhost:8008 -c /data/homeserver.yaml -u $username -p ([System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($password))) -a
-
+Write-Host "Login at: https://vcravex1.netlify.app" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "İşlem tamamlandı!" -ForegroundColor Green
-Write-Host ""
-Write-Host "Giriş bilgileri:" -ForegroundColor Cyan
-Write-Host "  Homeserver: http://localhost:8008" -ForegroundColor White
-Write-Host "  Username: @$username:localhost" -ForegroundColor White
-Write-Host "==================================" -ForegroundColor Cyan
-
-

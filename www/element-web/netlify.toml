@@ -2,11 +2,11 @@
 # ======================================
 
 [build]
-  # Pre-built webapp'i direkt publish et (local'de build edildi)
-  command = "echo 'Using pre-built webapp'"
+  # Build komutları
+  command = "yarn install && yarn build"
   publish = "webapp"
   
-  # Node.js versiyonu (gerekmiyor ama kalsın)
+  # Node.js versiyonu
   [build.environment]
     NODE_VERSION = "20"
 
