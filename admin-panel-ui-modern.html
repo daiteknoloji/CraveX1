@@ -980,18 +980,95 @@
                 
                 <!-- Users Page -->
                 <div class="page-view" id="page-users">
-                    <div class="flex-between mb-3">
-                        <h2 style="font-size: 20px; font-weight: 600;">Kullanıcı Yönetimi</h2>
-                        <button class="btn btn-primary" onclick="openCreateUserModal()">
-                            <i class="fas fa-user-plus"></i> Yeni Kullanıcı Oluştur
-                        </button>
+                    <!-- Filters Card -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-filter"></i>
+                                Kullanıcı Filtreleri
+                            </div>
+                            <button class="btn btn-primary" onclick="openCreateUserModal()">
+                                <i class="fas fa-user-plus"></i> Yeni Kullanıcı Oluştur
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;">
+                                <div class="form-group">
+                                    <label class="form-label">Kullanıcı ID</label>
+                                    <input type="text" class="form-input" id="filterUserId" placeholder="@user:domain">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Görünen Ad</label>
+                                    <input type="text" class="form-input" id="filterDisplayName" placeholder="Ad ara...">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Roller</label>
+                                    <select class="form-input" id="filterRole">
+                                        <option value="">Tümü</option>
+                                        <option value="admin">Admin</option>
+                                        <option value="user">Normal Kullanıcı</option>
+                                        <option value="locked">Kilitli</option>
+                                        <option value="banned">Yasaklı</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                                <div class="form-group">
+                                    <label class="form-label">Minimum Oda Sayısı</label>
+                                    <input type="number" class="form-input" id="filterMinRooms" placeholder="0" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Minimum Aktif Oturum</label>
+                                    <input type="number" class="form-input" id="filterMinSessions" placeholder="0" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Son Görülme</label>
+                                    <select class="form-input" id="filterLastSeen">
+                                        <option value="">Tümü</option>
+                                        <option value="1h">Son 1 Saat</option>
+                                        <option value="1d">Son 1 Gün</option>
+                                        <option value="1w">Son 1 Hafta</option>
+                                        <option value="1m">Son 1 Ay</option>
+                                        <option value="offline">Çevrimdışı (1 ay+)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 mt-3">
+                                <button class="btn btn-primary" onclick="loadUsers()">
+                                    <i class="fas fa-search"></i> Filtrele
+                                </button>
+                                <button class="btn btn-secondary" onclick="clearUserFilters()">
+                                    <i class="fas fa-times"></i> Temizle
+                                </button>
+                            </div>
+                        </div>
                     </div>
+                    
+                    <!-- Users Table Card -->
                     <div class="card">
                         <div class="card-body" id="usersContent">
                             <div class="loading">
                                 <i class="fas fa-spinner fa-spin"></i>
                                 <div class="loading-text">Kullanıcılar yükleniyor...</div>
                             </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="flex-between mt-3">
+                        <div class="pagination-info" id="usersPaginationInfo">
+                            <span id="usersShowingText">0 kullanıcı gösteriliyor</span>
+                        </div>
+                        <div class="pagination">
+                            <button class="btn btn-secondary" id="usersPrevBtn" onclick="previousUsersPage()" disabled>
+                                <i class="fas fa-chevron-left"></i> Önceki
+                            </button>
+                            <span class="pagination-info">
+                                Sayfa <strong id="usersCurrentPage">1</strong> / <strong id="usersTotalPages">1</strong>
+                            </span>
+                            <button class="btn btn-secondary" id="usersNextBtn" onclick="nextUsersPage()" disabled>
+                                Sonraki <i class="fas fa-chevron-right"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1716,6 +1793,10 @@
         }
         
         // Users Management
+        let currentUsersPage = 1;
+        const usersPerPage = 20;
+        let filteredUsers = [];
+        
         async function loadUsers() {
             const container = document.getElementById('usersContent');
             container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><div class="loading-text">Kullanıcılar yükleniyor...</div></div>';
@@ -1726,31 +1807,129 @@
                 
                 allUsers = data.users;
                 
-                let html = '<table><thead><tr><th>Kullanıcı ID</th><th>Görünen Ad</th><th>Roller</th><th>Odalar</th><th>Aktif Oturum</th><th>Son Görülme</th></tr></thead><tbody>';
-                
-                data.users.forEach(user => {
-                    const adminBadge = user.admin ? '<span class="badge badge-info"><i class="fas fa-crown"></i> Admin</span>' : '<span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-secondary);">Kullanıcı</span>';
-                    const lockedBadge = user.locked ? '<span class="badge badge-warning" style="margin-left: 4px;"><i class="fas fa-lock"></i> Kilitli</span>' : '';
-                    const bannedBadge = user.shadow_banned ? '<span class="badge badge-danger" style="margin-left: 4px;"><i class="fas fa-ban"></i> Banned</span>' : '';
+                // Apply filters
+                filteredUsers = allUsers.filter(user => {
+                    // User ID filter
+                    const userIdFilter = document.getElementById('filterUserId').value.toLowerCase();
+                    if (userIdFilter && !user.user_id.toLowerCase().includes(userIdFilter)) return false;
                     
-                    html += `
-                        <tr onclick="showUserDetails('${user.user_id}')" style="cursor: pointer;">
-                            <td style="font-family: monospace; color: var(--accent-blue); font-weight: 500;">${user.user_id}</td>
-                            <td>${user.displayname || '<em style="color: var(--text-muted);">Yok</em>'}</td>
-                            <td>${adminBadge}${lockedBadge}${bannedBadge}</td>
-                            <td><span class="badge badge-success">${user.room_count} oda</span></td>
-                            <td><span class="badge" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green);">${user.active_sessions} oturum</span></td>
-                            <td style="font-size: 12px; color: var(--text-muted);">${user.created}</td>
-                        </tr>
-                    `;
+                    // Display name filter
+                    const displayNameFilter = document.getElementById('filterDisplayName').value.toLowerCase();
+                    if (displayNameFilter && !(user.displayname || '').toLowerCase().includes(displayNameFilter)) return false;
+                    
+                    // Role filter
+                    const roleFilter = document.getElementById('filterRole').value;
+                    if (roleFilter === 'admin' && !user.admin) return false;
+                    if (roleFilter === 'user' && user.admin) return false;
+                    if (roleFilter === 'locked' && !user.locked) return false;
+                    if (roleFilter === 'banned' && !user.shadow_banned) return false;
+                    
+                    // Min rooms filter
+                    const minRooms = parseInt(document.getElementById('filterMinRooms').value) || 0;
+                    if (user.room_count < minRooms) return false;
+                    
+                    // Min sessions filter
+                    const minSessions = parseInt(document.getElementById('filterMinSessions').value) || 0;
+                    if (user.active_sessions < minSessions) return false;
+                    
+                    // Last seen filter
+                    const lastSeenFilter = document.getElementById('filterLastSeen').value;
+                    if (lastSeenFilter && user.last_seen) {
+                        const lastSeenTime = new Date(user.last_seen).getTime();
+                        const now = Date.now();
+                        const diff = now - lastSeenTime;
+                        
+                        if (lastSeenFilter === '1h' && diff > 3600000) return false;
+                        if (lastSeenFilter === '1d' && diff > 86400000) return false;
+                        if (lastSeenFilter === '1w' && diff > 604800000) return false;
+                        if (lastSeenFilter === '1m' && diff > 2592000000) return false;
+                        if (lastSeenFilter === 'offline' && diff <= 2592000000) return false;
+                    }
+                    
+                    return true;
                 });
                 
-                html += '</tbody></table>';
-                container.innerHTML = html;
+                // Reset to page 1 when filters change
+                currentUsersPage = 1;
+                renderUsersPage();
                 
             } catch (error) {
                 container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><div class="empty-text">Hata: ${error.message}</div></div>`;
             }
+        }
+        
+        function renderUsersPage() {
+            const container = document.getElementById('usersContent');
+            const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+            const startIndex = (currentUsersPage - 1) * usersPerPage;
+            const endIndex = startIndex + usersPerPage;
+            const pageUsers = filteredUsers.slice(startIndex, endIndex);
+            
+            if (filteredUsers.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><div class="empty-text">Filtre kriterlerine uygun kullanıcı bulunamadı</div></div>';
+                document.getElementById('usersShowingText').textContent = '0 kullanıcı gösteriliyor';
+                document.getElementById('usersCurrentPage').textContent = '0';
+                document.getElementById('usersTotalPages').textContent = '0';
+                document.getElementById('usersPrevBtn').disabled = true;
+                document.getElementById('usersNextBtn').disabled = true;
+                return;
+            }
+            
+            let html = '<table><thead><tr><th>Kullanıcı ID</th><th>Görünen Ad</th><th>Roller</th><th>Odalar</th><th>Aktif Oturum</th><th>Son Görülme</th></tr></thead><tbody>';
+            
+            pageUsers.forEach(user => {
+                const adminBadge = user.admin ? '<span class="badge badge-info"><i class="fas fa-crown"></i> Admin</span>' : '<span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-secondary);">Kullanıcı</span>';
+                const lockedBadge = user.locked ? '<span class="badge badge-warning" style="margin-left: 4px;"><i class="fas fa-lock"></i> Kilitli</span>' : '';
+                const bannedBadge = user.shadow_banned ? '<span class="badge badge-danger" style="margin-left: 4px;"><i class="fas fa-ban"></i> Banned</span>' : '';
+                
+                const lastSeen = user.last_seen ? new Date(user.last_seen).toLocaleString('tr-TR') : '<em style="color: var(--text-muted);">Hiç görülmedi</em>';
+                
+                html += `
+                    <tr onclick="showUserDetails('${user.user_id}')" style="cursor: pointer;">
+                        <td style="font-family: monospace; color: var(--accent-blue); font-weight: 500;">${user.user_id}</td>
+                        <td>${user.displayname || '<em style="color: var(--text-muted);">Yok</em>'}</td>
+                        <td>${adminBadge}${lockedBadge}${bannedBadge}</td>
+                        <td><span class="badge badge-success">${user.room_count} oda</span></td>
+                        <td><span class="badge" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green);">${user.active_sessions} oturum</span></td>
+                        <td style="font-size: 12px; color: var(--text-muted);">${lastSeen}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+            
+            // Update pagination info
+            document.getElementById('usersShowingText').textContent = `${startIndex + 1}-${Math.min(endIndex, filteredUsers.length)} / ${filteredUsers.length} kullanıcı`;
+            document.getElementById('usersCurrentPage').textContent = currentUsersPage;
+            document.getElementById('usersTotalPages').textContent = totalPages || 1;
+            document.getElementById('usersPrevBtn').disabled = currentUsersPage === 1;
+            document.getElementById('usersNextBtn').disabled = currentUsersPage >= totalPages;
+        }
+        
+        function nextUsersPage() {
+            const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+            if (currentUsersPage < totalPages) {
+                currentUsersPage++;
+                renderUsersPage();
+            }
+        }
+        
+        function previousUsersPage() {
+            if (currentUsersPage > 1) {
+                currentUsersPage--;
+                renderUsersPage();
+            }
+        }
+        
+        function clearUserFilters() {
+            document.getElementById('filterUserId').value = '';
+            document.getElementById('filterDisplayName').value = '';
+            document.getElementById('filterRole').value = '';
+            document.getElementById('filterMinRooms').value = '';
+            document.getElementById('filterMinSessions').value = '';
+            document.getElementById('filterLastSeen').value = '';
+            loadUsers();
         }
         
         // User Details Modal
