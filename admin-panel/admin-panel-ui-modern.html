@@ -1,0 +1,2708 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cravex Admin Panel - Professional</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            /* Element Web Theme Colors */
+            --bg-primary: #15191e;
+            --bg-secondary: #1e2228;
+            --bg-tertiary: #27292f;
+            --border-color: #394049;
+            --text-primary: #f5f5f5;
+            --text-secondary: #a1a1a1;
+            --text-muted: #737373;
+            --accent-green: #0dbd8b;
+            --accent-green-hover: #0ba67b;
+            --accent-blue: #368bd6;
+            --accent-blue-hover: #2d7ac4;
+            --accent-red: #ff5b55;
+            --accent-yellow: #f4c430;
+            --sidebar-bg: linear-gradient(180deg, #1a4d3e 0%, #0f2e24 100%);
+            --header-bg: #0f2e24;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideInUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        /* Layout */
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        /* Sidebar Navigation - Element Web Style */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 0;
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .sidebar-header {
+            padding: 0 24px 24px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .logo img {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+        }
+        
+        .logo-text h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 2px;
+            letter-spacing: -0.5px;
+        }
+        
+        .logo-text p {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+        
+        .nav-menu {
+            flex: 1;
+            padding: 24px 0;
+            overflow-y: auto;
+        }
+        
+        .nav-item {
+            padding: 14px 24px;
+            margin: 2px 12px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 15px;
+            font-weight: 500;
+            border-radius: 10px;
+            animation: slideInLeft 0.4s ease-out backwards;
+            animation-delay: calc(var(--item-index, 0) * 0.1s);
+            position: relative;
+        }
+        
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.95);
+            transform: translateX(2px);
+        }
+        
+        .nav-item.active {
+            background: rgba(13, 189, 139, 0.15);
+            color: var(--accent-green);
+            box-shadow: 0 0 0 1px rgba(13, 189, 139, 0.3);
+        }
+        
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 24px;
+            background: var(--accent-green);
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .nav-item i {
+            width: 24px;
+            text-align: center;
+            font-size: 20px;
+        }
+        
+        .sidebar-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+        }
+        
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .user-info {
+            flex: 1;
+        }
+        
+        .user-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .user-role {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        
+        .logout-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+        }
+        
+        .logout-icon:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent-red);
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 32px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .header-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        /* Content Area */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px;
+        }
+        
+        /* Page Views */
+        .page-view {
+            display: none;
+        }
+        
+        .page-view.active {
+            display: block;
+        }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            animation: slideInUp 0.5s ease-out backwards;
+            animation-delay: calc(var(--card-index, 0) * 0.1s);
+        }
+        
+        .stat-card:hover {
+            border-color: var(--accent-green);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 32px rgba(13, 189, 139, 0.2);
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            background: rgba(74, 144, 226, 0.1);
+            color: var(--accent-blue);
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: var(--accent-green);
+            color: white;
+            box-shadow: 0 2px 8px rgba(13, 189, 139, 0.3);
+        }
+        
+        .btn-primary:hover {
+            background: var(--accent-green-hover);
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 4px 16px rgba(13, 189, 139, 0.4);
+        }
+        
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent-red);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        /* Card */
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-body {
+            padding: 24px;
+        }
+        
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        th {
+            padding: 12px 20px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        td {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+        
+        tbody tr {
+            transition: background 0.15s;
+            cursor: pointer;
+        }
+        
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        
+        /* Badge */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .badge-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+        }
+        
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--accent-yellow);
+        }
+        
+        .badge-info {
+            background: rgba(74, 144, 226, 0.1);
+            color: var(--accent-blue);
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            max-width: 900px;
+            width: 90%;
+            max-height: 85vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-header {
+            padding: 24px 28px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            background: transparent;
+            border: none;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+        
+        .modal-body {
+            padding: 28px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .modal-footer {
+            padding: 20px 28px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        
+        /* Form */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .form-input, .form-select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+        
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            background: var(--bg-tertiary);
+        }
+        
+        /* Grid Layout for Rooms */
+        .rooms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        
+        .room-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .room-card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.1);
+        }
+        
+        .room-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        
+        .room-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+        
+        .room-id {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'Courier New', monospace;
+        }
+        
+        .room-stats {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        
+        .room-stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .room-stat i {
+            color: var(--accent-blue);
+        }
+        
+        /* Loading & Empty States */
+        .loading, .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .loading i, .empty-state i {
+            font-size: 48px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+        
+        .loading-text, .empty-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        /* Members List */
+        .members-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .member-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .member-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+        
+        .member-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .member-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        
+        .member-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .member-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .member-id {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'Courier New', monospace;
+        }
+        
+        /* Notification Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            z-index: 2000;
+        }
+        
+        .toast.show {
+            display: flex;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .toast-success {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--accent-green);
+        }
+        
+        .toast-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--accent-red);
+        }
+        
+        .toast-icon {
+            font-size: 20px;
+        }
+        
+        .toast-message {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        /* Search Bar */
+        .search-bar {
+            position: relative;
+            margin-bottom: 24px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 14px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+        
+        /* Utilities */
+        .text-muted { color: var(--text-muted); }
+        .text-center { text-align: center; }
+        .mb-2 { margin-bottom: 16px; }
+        .mb-3 { margin-bottom: 24px; }
+        .mt-3 { margin-top: 24px; }
+        .flex { display: flex; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .gap-2 { gap: 16px; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <img src="/static/1.svg" alt="Cravex Logo" onerror="this.style.display='none'">
+                    <div class="logo-text">
+                        <h1>Cravex Admin</h1>
+                        <p>Professional Panel</p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="nav-menu">
+                <div class="nav-item active" onclick="showPage('dashboard')" style="--item-index: 0">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="nav-item" onclick="showPage('rooms')" style="--item-index: 1">
+                    <i class="fas fa-door-open"></i>
+                    <span>Odalar</span>
+                </div>
+                <div class="nav-item" onclick="showPage('users')" style="--item-index: 2">
+                    <i class="fas fa-users"></i>
+                    <span>Kullanıcılar</span>
+                </div>
+                <div class="nav-item" onclick="showPage('messages')" style="--item-index: 3">
+                    <i class="fas fa-comments"></i>
+                    <span>Mesajlar</span>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar">A</div>
+                    <div class="user-info">
+                        <div class="user-name">Administrator</div>
+                        <div class="user-role">Server Admin</div>
+                    </div>
+                    <form action="/logout" method="POST" style="margin: 0;">
+                        <button type="submit" class="logout-icon" title="Çıkış Yap">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <h1 class="header-title" id="pageTitle">Dashboard</h1>
+                <div class="header-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="loadCurrentPage()">
+                        <i class="fas fa-sync"></i> Yenile
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Content -->
+            <div class="content">
+                <!-- Dashboard Page -->
+                <div class="page-view active" id="page-dashboard">
+                    <div class="stats-grid">
+                        <div class="stat-card" style="--card-index: 0">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-label">Toplam Mesaj</div>
+                                    <div class="stat-value" id="stat-messages">0</div>
+                                </div>
+                                <div class="stat-icon"><i class="fas fa-comments"></i></div>
+                            </div>
+                        </div>
+                        <div class="stat-card" style="--card-index: 1">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-label">Toplam Oda</div>
+                                    <div class="stat-value" id="stat-rooms">0</div>
+                                </div>
+                                <div class="stat-icon"><i class="fas fa-door-open"></i></div>
+                            </div>
+                        </div>
+                        <div class="stat-card" style="--card-index: 2">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-label">Aktif Kullanıcı</div>
+                                    <div class="stat-value" id="stat-users">0</div>
+                                </div>
+                                <div class="stat-icon"><i class="fas fa-users"></i></div>
+                            </div>
+                        </div>
+                        <div class="stat-card" style="--card-index: 3">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-label">Sistem Durumu</div>
+                                    <div class="stat-value" style="font-size: 20px; color: var(--accent-green);">
+                                        <i class="fas fa-check-circle"></i> Aktif
+                                    </div>
+                                </div>
+                                <div class="stat-icon"><i class="fas fa-server"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-chart-line"></i>
+                                Hızlı Erişim
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="flex gap-2">
+                                <button class="btn btn-primary" onclick="showPage('rooms')">
+                                    <i class="fas fa-door-open"></i> Odaları Yönet
+                                </button>
+                                <button class="btn btn-primary" onclick="showPage('users')">
+                                    <i class="fas fa-users"></i> Kullanıcıları Gör
+                                </button>
+                                <button class="btn btn-primary" onclick="showPage('messages')">
+                                    <i class="fas fa-comments"></i> Mesajları İncele
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Rooms Page -->
+                <div class="page-view" id="page-rooms">
+                    <!-- Filters Card -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-filter"></i>
+                                Oda Filtreleri
+                            </div>
+                            <button class="btn btn-primary" onclick="openCreateRoomModal()">
+                                <i class="fas fa-plus"></i> Yeni Oda Oluştur
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                                <div class="form-group">
+                                    <label class="form-label">Oda Ara</label>
+                                    <input type="text" class="form-input" id="roomSearch" placeholder="Oda adı veya ID...">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Oluşturan</label>
+                                    <input type="text" class="form-input" id="filterRoomCreator" placeholder="@user:domain">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Minimum Üye</label>
+                                    <input type="number" class="form-input" id="filterMinMembers" placeholder="0" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Oda Tipi</label>
+                                    <select class="form-input" id="filterRoomType">
+                                        <option value="">Tümü</option>
+                                        <option value="dm">DM (2 kişi)</option>
+                                        <option value="group">Grup (3+ kişi)</option>
+                                        <option value="public">Herkese Açık</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 mt-3">
+                                <button class="btn btn-primary" onclick="loadRooms()">
+                                    <i class="fas fa-search"></i> Filtrele
+                                </button>
+                                <button class="btn btn-secondary" onclick="clearRoomFilters()">
+                                    <i class="fas fa-times"></i> Temizle
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Rooms Table -->
+                    <div class="card">
+                        <div class="card-body" id="roomsContent">
+                            <div class="loading">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <div class="loading-text">Odalar yükleniyor...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="flex-between mt-3">
+                        <div class="pagination-info">
+                            <span id="roomsShowingText">0 oda gösteriliyor</span>
+                        </div>
+                        <div class="pagination">
+                            <button class="btn btn-secondary" id="roomsPrevBtn" onclick="previousRoomsPage()" disabled>
+                                <i class="fas fa-chevron-left"></i> Önceki
+                            </button>
+                            <span class="pagination-info">
+                                Sayfa <strong id="roomsCurrentPage">1</strong> / <strong id="roomsTotalPages">1</strong>
+                            </span>
+                            <button class="btn btn-secondary" id="roomsNextBtn" onclick="nextRoomsPage()" disabled>
+                                Sonraki <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Users Page -->
+                <div class="page-view" id="page-users">
+                    <!-- Filters Card -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-filter"></i>
+                                Kullanıcı Filtreleri
+                            </div>
+                            <button class="btn btn-primary" onclick="openCreateUserModal()">
+                                <i class="fas fa-user-plus"></i> Yeni Kullanıcı Oluştur
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;">
+                                <div class="form-group">
+                                    <label class="form-label">Kullanıcı ID</label>
+                                    <input type="text" class="form-input" id="filterUserId" placeholder="@user:domain">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Görünen Ad</label>
+                                    <input type="text" class="form-input" id="filterDisplayName" placeholder="Ad ara...">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Roller</label>
+                                    <select class="form-input" id="filterRole">
+                                        <option value="">Tümü</option>
+                                        <option value="admin">Admin</option>
+                                        <option value="user">Normal Kullanıcı</option>
+                                        <option value="locked">Kilitli</option>
+                                        <option value="banned">Yasaklı</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                                <div class="form-group">
+                                    <label class="form-label">Minimum Oda Sayısı</label>
+                                    <input type="number" class="form-input" id="filterMinRooms" placeholder="0" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Minimum Aktif Oturum</label>
+                                    <input type="number" class="form-input" id="filterMinSessions" placeholder="0" min="0">
+                                </div>
+                            </div>
+                            <div class="flex gap-2 mt-3">
+                                <button class="btn btn-primary" onclick="loadUsers()">
+                                    <i class="fas fa-search"></i> Filtrele
+                                </button>
+                                <button class="btn btn-secondary" onclick="clearUserFilters()">
+                                    <i class="fas fa-times"></i> Temizle
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Users Table Card -->
+                    <div class="card">
+                        <div class="card-body" id="usersContent">
+                            <div class="loading">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <div class="loading-text">Kullanıcılar yükleniyor...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="flex-between mt-3">
+                        <div class="pagination-info" id="usersPaginationInfo">
+                            <span id="usersShowingText">0 kullanıcı gösteriliyor</span>
+                        </div>
+                        <div class="pagination">
+                            <button class="btn btn-secondary" id="usersPrevBtn" onclick="previousUsersPage()" disabled>
+                                <i class="fas fa-chevron-left"></i> Önceki
+                            </button>
+                            <span class="pagination-info">
+                                Sayfa <strong id="usersCurrentPage">1</strong> / <strong id="usersTotalPages">1</strong>
+                            </span>
+                            <button class="btn btn-secondary" id="usersNextBtn" onclick="nextUsersPage()" disabled>
+                                Sonraki <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Messages Page (existing) -->
+                <div class="page-view" id="page-messages">
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-filter"></i>
+                                Mesaj Filtreleri
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;">
+                                <div class="form-group">
+                                    <label class="form-label">Tarih Aralığı (Başlangıç)</label>
+                                    <input type="datetime-local" class="form-input" id="filterStartDate">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Tarih Aralığı (Bitiş)</label>
+                                    <input type="datetime-local" class="form-input" id="filterEndDate">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Hızlı Tarih Seçimi</label>
+                                    <select class="form-input" id="quickDateFilter" onchange="applyQuickDateFilter()">
+                                        <option value="">Manuel</option>
+                                        <option value="1h">Son 1 Saat</option>
+                                        <option value="1d">Son 1 Gün</option>
+                                        <option value="1w">Son 1 Hafta</option>
+                                        <option value="1m">Son 1 Ay</option>
+                                        <option value="all">Tüm Zamanlar</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;">
+                                <div class="form-group">
+                                    <label class="form-label">Oda</label>
+                                    <input type="text" class="form-input" id="filterRoomId" placeholder="Oda adı veya ID">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Gönderen</label>
+                                    <input type="text" class="form-input" id="filterSender" placeholder="@user:domain">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Alıcı</label>
+                                    <input type="text" class="form-input" id="filterReceiver" placeholder="@user:domain">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Mesaj İçinde Ara</label>
+                                    <input type="text" class="form-input" id="searchQuery" placeholder="Kelime ara...">
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="btn btn-primary" onclick="searchMessages()">
+                                    <i class="fas fa-search"></i> Filtrele
+                                </button>
+                                <button class="btn btn-secondary" onclick="exportData('json')">
+                                    <i class="fas fa-download"></i> JSON
+                                </button>
+                                <button class="btn btn-secondary" onclick="exportData('csv')">
+                                    <i class="fas fa-file-csv"></i> CSV
+                                </button>
+                                <button class="btn btn-secondary" onclick="clearFilters()">
+                                    <i class="fas fa-times"></i> Temizle
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header flex-between">
+                            <div class="card-title">
+                                <i class="fas fa-list"></i>
+                                Mesajlar
+                            </div>
+                            <div id="messagePagination" style="display: none;">
+                                <!-- Pagination will be inserted here -->
+                            </div>
+                        </div>
+                        <div id="messagesContent">
+                            <div class="empty-state">
+                                <i class="fas fa-inbox"></i>
+                                <div class="empty-text">Mesajları görüntülemek için filtreleri kullanın</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Room Detail Modal -->
+    <div class="modal-overlay" id="roomModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="roomModalTitle">Oda Detayları</h2>
+                <button class="modal-close" onclick="closeRoomModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="roomModalBody">
+                <!-- Room details will be loaded here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Room Messages Modal -->
+    <div class="modal-overlay" id="messagesModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="messagesModalTitle">Oda Mesajları</h2>
+                <button class="modal-close" onclick="closeMessagesModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 0;">
+                <div id="roomMessagesContent" style="max-height: 500px; overflow-y: auto;">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <div class="loading-text">Mesajlar yükleniyor...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content: space-between;">
+                <div id="messagesPagination"></div>
+                <button class="btn btn-secondary" onclick="closeMessagesModal()">Kapat</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Member Modal -->
+    <div class="modal-overlay" id="addMemberModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Üye Ekle</h2>
+                <button class="modal-close" onclick="closeAddMemberModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Kullanıcı Ara ve Seç</label>
+                    <div style="position: relative;">
+                        <input type="text" class="form-input" id="userSearchInput" 
+                               placeholder="Kullanıcı adı yazın..." 
+                               autocomplete="off"
+                               oninput="filterUserSelect()">
+                        <select class="form-select" id="userSelect" 
+                                style="margin-top: 8px; max-height: 200px; overflow-y: auto;"
+                                size="8"
+                                onchange="selectUserFromList()">
+                            <option value="" disabled>Yukarıda arama yapın...</option>
+                        </select>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                        <i class="fas fa-info-circle"></i> Yukarıdaki kutuya kullanıcı adı yazarak arama yapabilirsiniz
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddMemberModal()">İptal</button>
+                <button class="btn btn-primary" onclick="confirmAddMember()">
+                    <i class="fas fa-user-plus"></i> Ekle
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create Room Modal -->
+    <div class="modal-overlay" id="createRoomModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Yeni Oda Oluştur</h2>
+                <button class="modal-close" onclick="closeCreateRoomModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Oda Adı</label>
+                    <input type="text" class="form-input" id="newRoomName" placeholder="Örn: Genel Sohbet">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Oda Türü</label>
+                    <select class="form-select" id="newRoomPublic">
+                        <option value="true">Public (Herkese Açık)</option>
+                        <option value="false">Private (Sadece Davetliler)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCreateRoomModal()">İptal</button>
+                <button class="btn btn-primary" onclick="confirmCreateRoom()">
+                    <i class="fas fa-plus"></i> Oluştur
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create User Modal -->
+    <div class="modal-overlay" id="createUserModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Yeni Kullanıcı Oluştur</h2>
+                <button class="modal-close" onclick="closeCreateUserModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Kullanıcı Adı <span style="color: var(--accent-red);">*</span></label>
+                    <input type="text" class="form-input" id="newUsername" placeholder="Örn: ahmet (sadece @ işareti olmadan)">
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                        Oluşacak ID: <span id="userIdPreview" style="font-family: monospace; color: var(--accent-blue);">@kullanici:localhost</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Şifre <span style="color: var(--accent-red);">*</span></label>
+                    <input type="password" class="form-input" id="newUserPassword" placeholder="En az 8 karakter">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Görünen Ad (Opsiyonel)</label>
+                    <input type="text" class="form-input" id="newUserDisplayname" placeholder="Örn: Ahmet Yılmaz">
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="newUserAdmin" style="width: auto; cursor: pointer;">
+                        <span style="color: var(--text-primary); font-size: 14px;">
+                            <i class="fas fa-crown" style="color: var(--accent-yellow);"></i>
+                            Server Admin Yetkisi Ver
+                        </span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCreateUserModal()">İptal</button>
+                <button class="btn btn-primary" onclick="confirmCreateUser()">
+                    <i class="fas fa-user-plus"></i> Kullanıcı Oluştur
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Detail Modal -->
+    <div class="modal-overlay" id="userModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="userModalTitle">Kullanıcı Detayları</h2>
+                <button class="modal-close" onclick="closeUserModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="userModalBody">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <div class="loading-text">Yükleniyor...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Change Password Modal -->
+    <div class="modal-overlay" id="changePasswordModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Şifre Değiştir</h2>
+                <button class="modal-close" onclick="closeChangePasswordModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Kullanıcı:</label>
+                    <div class="form-input" id="changePasswordUserId" style="background: rgba(255,255,255,0.03); cursor: not-allowed;" readonly></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Yeni Şifre:</label>
+                    <input type="password" class="form-input" id="newPassword" placeholder="En az 8 karakter" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Yeni Şifre (Tekrar):</label>
+                    <input type="password" class="form-input" id="confirmPassword" placeholder="Şifrenizi tekrar girin" required>
+                </div>
+                <div id="passwordError" style="color: var(--danger); font-size: 14px; margin-bottom: 12px; display: none;">
+                    <i class="fas fa-exclamation-triangle"></i> <span id="passwordErrorText"></span>
+                </div>
+                <button class="btn btn-primary" onclick="submitPasswordChange()" style="width: 100%;">
+                    <i class="fas fa-save"></i> Şifreyi Değiştir
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="toast-icon fas fa-check-circle"></i>
+        <div class="toast-message" id="toastMessage"></div>
+    </div>
+
+    <script>
+        // Global state
+        let currentPage = 'dashboard';
+        let currentRoomId = null;
+        let allRooms = [];
+        let allUsers = [];
+        
+        // Load stats on page load
+        loadStats();
+        
+        // Page Navigation
+        function showPage(pageName) {
+            // Update navigation
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            // Update pages
+            document.querySelectorAll('.page-view').forEach(page => page.classList.remove('active'));
+            document.getElementById(`page-${pageName}`).classList.add('active');
+            
+            // Update header title
+            const titles = {
+                'dashboard': 'Dashboard',
+                'rooms': 'Oda Yönetimi',
+                'users': 'Kullanıcı Yönetimi',
+                'messages': 'Mesaj Görüntüleme'
+            };
+            document.getElementById('pageTitle').textContent = titles[pageName] || pageName;
+            
+            currentPage = pageName;
+            
+            // Load page data
+            if (pageName === 'rooms') loadRooms();
+            if (pageName === 'users') loadUsers();
+        }
+        
+        function loadCurrentPage() {
+            if (currentPage === 'dashboard') loadStats();
+            if (currentPage === 'rooms') loadRooms();
+            if (currentPage === 'users') loadUsers();
+            if (currentPage === 'messages') searchMessages();
+        }
+        
+        // Stats
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                
+                document.getElementById('stat-messages').textContent = stats.total_messages.toLocaleString();
+                document.getElementById('stat-rooms').textContent = stats.total_rooms.toLocaleString();
+                document.getElementById('stat-users').textContent = stats.total_users.toLocaleString();
+            } catch (error) {
+                console.error('Stats load error:', error);
+            }
+        }
+        
+        // Rooms Management
+        let currentRoomsPage = 1;
+        const roomsPerPage = 20;
+        let filteredRooms = [];
+        
+        async function loadRooms() {
+            const container = document.getElementById('roomsContent');
+            container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><div class="loading-text">Odalar yükleniyor...</div></div>';
+            
+            try {
+                const response = await fetch('/api/rooms');
+                const data = await response.json();
+                
+                allRooms = data.rooms;
+                
+                // Apply filters
+                filteredRooms = allRooms.filter(room => {
+                    // Search filter
+                    const searchTerm = document.getElementById('roomSearch').value.toLowerCase();
+                    if (searchTerm && !room.name.toLowerCase().includes(searchTerm) && !room.room_id.toLowerCase().includes(searchTerm)) {
+                        return false;
+                    }
+                    
+                    // Creator filter
+                    const creator = document.getElementById('filterRoomCreator').value.toLowerCase();
+                    if (creator && !room.creator.toLowerCase().includes(creator)) {
+                        return false;
+                    }
+                    
+                    // Min members filter
+                    const minMembers = parseInt(document.getElementById('filterMinMembers').value) || 0;
+                    if (room.member_count < minMembers) {
+                        return false;
+                    }
+                    
+                    // Room type filter
+                    const roomType = document.getElementById('filterRoomType').value;
+                    if (roomType === 'dm' && room.member_count !== 2) return false;
+                    if (roomType === 'group' && room.member_count < 3) return false;
+                    if (roomType === 'public' && !room.is_public) return false;
+                    
+                    return true;
+                });
+                
+                // Reset to page 1
+                currentRoomsPage = 1;
+                renderRoomsPage();
+                
+            } catch (error) {
+                container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><div class="empty-text">Hata: ${error.message}</div></div>`;
+            }
+        }
+        
+        function renderRoomsPage() {
+            const container = document.getElementById('roomsContent');
+            const totalPages = Math.ceil(filteredRooms.length / roomsPerPage);
+            const startIndex = (currentRoomsPage - 1) * roomsPerPage;
+            const endIndex = startIndex + roomsPerPage;
+            const pageRooms = filteredRooms.slice(startIndex, endIndex);
+            
+            if (filteredRooms.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-door-open"></i><div class="empty-text">Filtre kriterlerine uygun oda bulunamadı</div></div>';
+                document.getElementById('roomsShowingText').textContent = '0 oda gösteriliyor';
+                document.getElementById('roomsCurrentPage').textContent = '0';
+                document.getElementById('roomsTotalPages').textContent = '0';
+                document.getElementById('roomsPrevBtn').disabled = true;
+                document.getElementById('roomsNextBtn').disabled = true;
+                return;
+            }
+            
+            let html = '<table><thead><tr><th>Oda Adı</th><th>Oluşturan</th><th>Üye Sayısı</th><th>Mesaj</th><th>Tür</th></tr></thead><tbody>';
+            
+            pageRooms.forEach(room => {
+                const roomType = room.member_count === 2 ? '<span class="badge badge-info"><i class="fas fa-comment"></i> DM</span>' :
+                                room.is_public ? '<span class="badge badge-success"><i class="fas fa-globe"></i> Public</span>' :
+                                '<span class="badge badge-warning"><i class="fas fa-lock"></i> Private</span>';
+                
+                html += `
+                    <tr onclick="showRoomDetails('${room.room_id}')" style="cursor: pointer;">
+                        <td>
+                            <div style="font-weight: 500; color: var(--text-primary);">${room.name}</div>
+                            <div style="font-size: 11px; font-family: monospace; color: var(--text-muted); margin-top: 2px;">${room.room_id}</div>
+                        </td>
+                        <td style="font-family: monospace; color: var(--accent-blue);">${room.creator}</td>
+                        <td><span class="badge badge-success">${room.member_count} üye</span></td>
+                        <td><span class="badge" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green);">${room.message_count} mesaj</span></td>
+                        <td>${roomType}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+            
+            // Update pagination
+            document.getElementById('roomsShowingText').textContent = `${startIndex + 1}-${Math.min(endIndex, filteredRooms.length)} / ${filteredRooms.length} oda`;
+            document.getElementById('roomsCurrentPage').textContent = currentRoomsPage;
+            document.getElementById('roomsTotalPages').textContent = totalPages || 1;
+            document.getElementById('roomsPrevBtn').disabled = currentRoomsPage === 1;
+            document.getElementById('roomsNextBtn').disabled = currentRoomsPage >= totalPages;
+        }
+        
+        function nextRoomsPage() {
+            const totalPages = Math.ceil(filteredRooms.length / roomsPerPage);
+            if (currentRoomsPage < totalPages) {
+                currentRoomsPage++;
+                renderRoomsPage();
+            }
+        }
+        
+        function previousRoomsPage() {
+            if (currentRoomsPage > 1) {
+                currentRoomsPage--;
+                renderRoomsPage();
+            }
+        }
+        
+        function clearRoomFilters() {
+            document.getElementById('roomSearch').value = '';
+            document.getElementById('filterRoomCreator').value = '';
+            document.getElementById('filterMinMembers').value = '';
+            document.getElementById('filterRoomType').value = '';
+            loadRooms();
+        }
+        
+        // Legacy function (kept for compatibility)
+        function filterRooms() {
+            loadRooms();
+        }
+        
+        // Room Details
+        async function showRoomDetails(roomId) {
+            currentRoomId = roomId;
+            const modal = document.getElementById('roomModal');
+            const body = document.getElementById('roomModalBody');
+            
+            body.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><div class="loading-text">Yükleniyor...</div></div>';
+            modal.classList.add('show');
+            
+            try {
+                // Get room info
+                const room = allRooms.find(r => r.room_id === roomId);
+                
+                // Get members
+                const response = await fetch(`/api/rooms/${encodeURIComponent(roomId)}/members`);
+                const data = await response.json();
+                
+                document.getElementById('roomModalTitle').textContent = room.name;
+                
+                // Check if this is a DM room (2 members and no name set, or name starts with "DM:")
+                const isDM = room.is_dm || room.name.startsWith('DM:');
+                
+                let html = `
+                    <div class="mb-3">
+                        <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">
+                            ODA BİLGİLERİ
+                            ${isDM ? '<span class="badge badge-info" style="margin-left: 8px;"><i class="fas fa-user-friends"></i> Direct Message</span>' : ''}
+                        </h3>
+                        <div style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: 8px;">
+                            <div style="margin-bottom: 8px;"><strong>Room ID:</strong> <span style="font-family: monospace; font-size: 12px; color: var(--text-muted);">${roomId}</span></div>
+                            <div style="margin-bottom: 8px;"><strong>Oluşturan:</strong> ${room.creator}</div>
+                            <div style="margin-bottom: 8px;"><strong>Üye Sayısı:</strong> ${room.member_count}</div>
+                            <div><strong>Mesaj Sayısı:</strong> ${room.message_count}</div>
+                            ${isDM ? '<div style="margin-top: 12px; padding: 10px; background: rgba(74, 144, 226, 0.1); border-left: 3px solid var(--accent-blue); border-radius: 4px; font-size: 12px; color: var(--text-secondary);"><i class="fas fa-info-circle"></i> Bu bir direkt mesaj odası. Üye ekleme/çıkarma özelliği DM\'lerde devre dışı.</div>' : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="flex-between mb-3">
+                        <button class="btn btn-primary btn-sm" onclick="showRoomMessages('${roomId}', '${room.name}')">
+                            <i class="fas fa-comments"></i> Mesajları Görüntüle
+                        </button>
+                    </div>
+                `;
+                
+                // Show members list
+                if (isDM) {
+                    // For DM rooms: Show members but NO add/remove buttons
+                    html += `
+                        <div class="mb-2">
+                            <h3 style="font-size: 14px; color: var(--text-secondary);">ÜYELER (${data.members.length})</h3>
+                        </div>
+                        <div class="members-list">
+                    `;
+                    
+                    data.members.forEach(member => {
+                        const initial = member.user_id.substring(1, 2).toUpperCase();
+                        const displayName = member.displayname || member.user_id;
+                        
+                        html += `
+                            <div class="member-item">
+                                <div class="member-info">
+                                    <div class="member-avatar">${initial}</div>
+                                    <div class="member-details">
+                                        <div class="member-name">${displayName}</div>
+                                        <div class="member-id">${member.user_id}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                } else {
+                    // For normal rooms: Show members WITH add/remove buttons
+                    html += `
+                        <div class="flex-between mb-2">
+                            <h3 style="font-size: 14px; color: var(--text-secondary);">ÜYELER (${data.members.length})</h3>
+                            <button class="btn btn-primary btn-sm" onclick="openAddMemberModal()">
+                                <i class="fas fa-user-plus"></i> Üye Ekle
+                            </button>
+                        </div>
+                    `;
+                
+                html += `<div class="members-list">`;
+                    
+                    data.members.forEach(member => {
+                        const initial = member.user_id.substring(1, 2).toUpperCase();
+                        const displayName = member.displayname || member.user_id;
+                        
+                        html += `
+                            <div class="member-item">
+                                <div class="member-info">
+                                    <div class="member-avatar">${initial}</div>
+                                    <div class="member-details">
+                                        <div class="member-name">${displayName}</div>
+                                        <div class="member-id">${member.user_id}</div>
+                                    </div>
+                                </div>
+                                ${!isDM ? `
+                                    <button class="btn btn-danger btn-sm" onclick="removeMember('${member.user_id}')">
+                                        <i class="fas fa-user-minus"></i> Çıkar
+                                    </button>
+                                ` : ''}
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                }
+                
+                body.innerHTML = html;
+                
+            } catch (error) {
+                body.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><div class="empty-text">Hata: ${error.message}</div></div>`;
+            }
+        }
+        
+        function closeRoomModal() {
+            document.getElementById('roomModal').classList.remove('show');
+            currentRoomId = null;
+        }
+        
+        // Room Messages Modal
+        let currentMessagePage = 1;
+        let currentMessageRoomId = null;
+        
+        async function showRoomMessages(roomId, roomName) {
+            currentMessageRoomId = roomId;
+            currentMessagePage = 1;
+            
+            document.getElementById('messagesModalTitle').textContent = `${roomName} - Mesajlar`;
+            document.getElementById('messagesModal').classList.add('show');
+            
+            await loadRoomMessages();
+        }
+        
+        async function loadRoomMessages() {
+            const container = document.getElementById('roomMessagesContent');
+            container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><div class="loading-text">Mesajlar yükleniyor...</div></div>';
+            
+            try {
+                const response = await fetch(`/api/rooms/${encodeURIComponent(currentMessageRoomId)}/messages?page=${currentMessagePage}&page_size=30`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><div class="empty-text">Hata: ${data.error}</div></div>`;
+                    return;
+                }
+                
+                if (data.messages.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><div class="empty-text">Bu odada henüz mesaj yok</div></div>';
+                    document.getElementById('messagesPagination').innerHTML = '';
+                    return;
+                }
+                
+                // Render messages
+                let html = '<div style="padding: 20px;">';
+                
+                data.messages.forEach((msg, index) => {
+                    const isEven = index % 2 === 0;
+                    const borderColor = msg.is_deleted ? 'var(--accent-red)' : 'var(--accent-blue)';
+                    const bgOpacity = msg.is_deleted ? '0.05' : (isEven ? '0.02' : '0');
+                    
+                    // Deleted badge
+                    const deletedBadge = msg.is_deleted ? `
+                        <span class="badge badge-danger" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); margin-left: 8px;">
+                            <i class="fas fa-trash"></i> SİLİNDİ
+                        </span>
+                    ` : '';
+                    
+                    // Deleted info
+                    const deletedInfo = msg.is_deleted ? `
+                        <div style="margin-top: 6px; padding: 8px; background: rgba(239, 68, 68, 0.1); border-radius: 6px; font-size: 11px; color: var(--accent-red);">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>${msg.deleted_by}</strong> tarafından silindi
+                            (${msg.deleted_at})
+                        </div>
+                    ` : '';
+                    
+                    const messageText = msg.is_deleted ? 
+                        `<em style="color: var(--text-muted); text-decoration: line-through;">${msg.message || 'Mesaj içeriği silindi'}</em>` : 
+                        (msg.message || '<em style="color: var(--text-muted);">Boş mesaj</em>');
+                    
+                    html += `
+                        <div class="message-item" data-event-id="${msg.event_id}" style="padding: 12px; margin-bottom: 8px; background: rgba(255,255,255,${bgOpacity}); border-radius: 8px; border-left: 3px solid ${borderColor}; transition: all 0.3s ease;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <div>
+                                    <span style="font-weight: 600; color: var(--accent-blue); font-family: monospace; font-size: 12px;">${msg.sender}</span>
+                                    ${deletedBadge}
+                                </div>
+                                <span style="color: var(--text-muted); font-size: 11px;">${msg.timestamp}</span>
+                            </div>
+                            <div style="color: var(--text-primary); font-size: 13px; line-height: 1.5;">
+                                ${messageText}
+                            </div>
+                            ${deletedInfo}
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                container.innerHTML = html;
+                
+                // Update pagination
+                const pagination = document.getElementById('messagesPagination');
+                if (data.total_pages > 1) {
+                    pagination.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <button class="btn btn-secondary btn-sm" onclick="previousRoomMessagePage()" ${currentMessagePage === 1 ? 'disabled' : ''}>
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <span style="font-size: 13px; color: var(--text-secondary);">
+                                ${currentMessagePage} / ${data.total_pages} <span style="color: var(--text-muted);">(${data.total} mesaj)</span>
+                            </span>
+                            <button class="btn btn-secondary btn-sm" onclick="nextRoomMessagePage()" ${currentMessagePage === data.total_pages ? 'disabled' : ''}>
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    pagination.innerHTML = `<span style="font-size: 13px; color: var(--text-muted);">${data.total} mesaj</span>`;
+                }
+                
+            } catch (error) {
+                container.innerHTML = `<div class="empty-state"><i class="fas fa-times-circle"></i><div class="empty-text">Hata: ${error.message}</div></div>`;
+            }
+        }
+        
+        function nextRoomMessagePage() {
+            currentMessagePage++;
+            loadRoomMessages();
+        }
+        
+        function previousRoomMessagePage() {
+            currentMessagePage--;
+            loadRoomMessages();
+        }
+        
+        function closeMessagesModal() {
+            document.getElementById('messagesModal').classList.remove('show');
+            currentMessageRoomId = null;
+        }
+        
+        // Open room messages from message list (with scroll to specific message)
+        async function openRoomFromMessage(roomId, roomName, eventId) {
+            // Show messages modal for this room
+            await showRoomMessages(roomId, roomName);
+            
+            // Wait a bit for messages to load
+            setTimeout(() => {
+                // Find the message with this event_id and scroll to it
+                const messageElements = document.querySelectorAll('#messagesModalBody .message-item');
+                messageElements.forEach(el => {
+                    if (el.dataset.eventId === eventId) {
+                        // Highlight and scroll to this message
+                        el.style.background = 'rgba(74, 144, 226, 0.15)';
+                        el.style.border = '2px solid var(--accent-blue)';
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        
+                        // Remove highlight after 3 seconds
+                        setTimeout(() => {
+                            el.style.background = '';
+                            el.style.border = '';
+                        }, 3000);
+                    }
+                });
+            }, 500);
+        }
+        
+        // Add Member
+        let filteredUsersList = [];
+        
+        async function openAddMemberModal() {
+            const modal = document.getElementById('addMemberModal');
+            const select = document.getElementById('userSelect');
+            const searchInput = document.getElementById('userSearchInput');
+            
+            // Load users if not loaded
+            if (allUsers.length === 0) {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+                allUsers = data.users;
+            }
+            
+            // Reset search
+            searchInput.value = '';
+            filteredUsersList = [...allUsers];
+            
+            // Populate select with all users initially
+            updateUserSelectOptions();
+            
+            modal.classList.add('show');
+            searchInput.focus();
+        }
+        
+        function filterUserSelect() {
+            const searchTerm = document.getElementById('userSearchInput').value.toLowerCase();
+            
+            if (!searchTerm) {
+                filteredUsersList = [...allUsers];
+            } else {
+                filteredUsersList = allUsers.filter(user => 
+                    user.user_id.toLowerCase().includes(searchTerm) ||
+                    (user.displayname && user.displayname.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            updateUserSelectOptions();
+        }
+        
+        function updateUserSelectOptions() {
+            const select = document.getElementById('userSelect');
+            
+            if (filteredUsersList.length === 0) {
+                select.innerHTML = '<option value="" disabled>Kullanıcı bulunamadı</option>';
+                return;
+            }
+            
+            let options = '';
+            filteredUsersList.forEach(user => {
+                const displayText = user.displayname ? `${user.displayname} (${user.user_id})` : user.user_id;
+                options += `<option value="${user.user_id}">${displayText}</option>`;
+            });
+            select.innerHTML = options;
+            
+            // Auto-select first option if only one result
+            if (filteredUsersList.length === 1) {
+                select.selectedIndex = 0;
+            }
+        }
+        
+        function selectUserFromList() {
+            const select = document.getElementById('userSelect');
+            const searchInput = document.getElementById('userSearchInput');
+            
+            if (select.value) {
+                const selectedUser = filteredUsersList.find(u => u.user_id === select.value);
+                if (selectedUser) {
+                    searchInput.value = selectedUser.displayname || selectedUser.user_id;
+                }
+            }
+        }
+        
+        function closeAddMemberModal() {
+            document.getElementById('addMemberModal').classList.remove('show');
+            document.getElementById('userSearchInput').value = '';
+            document.getElementById('userSelect').value = '';
+        }
+        
+        async function confirmAddMember() {
+            const userId = document.getElementById('userSelect').value;
+            if (!userId) {
+                showToast('Lütfen bir kullanıcı seçin!', 'error');
+                return;
+            }
+            
+            // Show loading state
+            const addBtn = event.target;
+            const originalText = addBtn.innerHTML;
+            addBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ekleniyor...';
+            addBtn.disabled = true;
+            
+            try {
+                const response = await fetch(`/api/rooms/${encodeURIComponent(currentRoomId)}/members`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show detailed message based on method
+                    let message = result.message || 'Üye başarıyla eklendi!';
+                    
+                    if (result.method === 'matrix_api') {
+                        message += '\n\n✅ Kullanıcı Element Web\'de hemen görecek!';
+                    } else if (result.method === 'invite_only') {
+                        message += '\n\n📧 Kullanıcı daveti Element Web\'de görecek ve kabul etmeli!';
+                    } else if (result.method === 'admin_join') {
+                        message += '\n\n✅ Element Web\'i yenileyin (F5)';
+                    } else if (result.method === 'database') {
+                        message += '\n\n⚠️ Element Web\'de görmek için logout/login yapın veya Synapse restart edin.';
+                    }
+                    
+                    showToast(message, 'success');
+                    closeAddMemberModal();
+                    
+                    // Refresh room details after a short delay
+                    setTimeout(() => {
+                        showRoomDetails(currentRoomId);
+                    }, 1000);
+                } else {
+                    showToast(result.error || 'Üye eklenemedi', 'error');
+                }
+            } catch (error) {
+                showToast('Hata: ' + error.message, 'error');
+            } finally {
+                addBtn.innerHTML = originalText;
+                addBtn.disabled = false;
+            }
+        }
+        
+        // Remove Member
+        async function removeMember(userId) {
+            if (!confirm(`${userId} kullanıcısını odadan çıkarmak istediğinize emin misiniz?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/rooms/${encodeURIComponent(currentRoomId)}/members/${encodeURIComponent(userId)}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('Üye odadan çıkarıldı!', 'success');
+                    showRoomDetails(currentRoomId); // Refresh
+                } else {
+                    showToast(result.message || 'Üye çıkarılamadı', 'error');
+                }
+            } catch (error) {
+                showToast('Hata: ' + error.message, 'error');
+            }
+        }
+        
+        // Users Management
+        let currentUsersPage = 1;
+        const usersPerPage = 20;
+        let filteredUsers = [];
+        
+        async function loadUsers() {
+            const container = document.getElementById('usersContent');
+            container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><div class="loading-text">Kullanıcılar yükleniyor...</div></div>';
+            
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+                
+                allUsers = data.users;
+                
+                // Apply filters
+                filteredUsers = allUsers.filter(user => {
+                    // User ID filter
+                    const userIdFilter = document.getElementById('filterUserId').value.toLowerCase();
+                    if (userIdFilter && !user.user_id.toLowerCase().includes(userIdFilter)) return false;
+                    
+                    // Display name filter
+                    const displayNameFilter = document.getElementById('filterDisplayName').value.toLowerCase();
+                    if (displayNameFilter && !(user.displayname || '').toLowerCase().includes(displayNameFilter)) return false;
+                    
+                    // Role filter
+                    const roleFilter = document.getElementById('filterRole').value;
+                    if (roleFilter === 'admin' && !user.admin) return false;
+                    if (roleFilter === 'user' && user.admin) return false;
+                    if (roleFilter === 'locked' && !user.locked) return false;
+                    if (roleFilter === 'banned' && !user.shadow_banned) return false;
+                    
+                    // Min rooms filter
+                    const minRooms = parseInt(document.getElementById('filterMinRooms').value) || 0;
+                    if (user.room_count < minRooms) return false;
+                    
+                    // Min sessions filter
+                    const minSessions = parseInt(document.getElementById('filterMinSessions').value) || 0;
+                    if (user.active_sessions < minSessions) return false;
+                    
+                    return true;
+                });
+                
+                // Reset to page 1 when filters change
+                currentUsersPage = 1;
+                renderUsersPage();
+                
+            } catch (error) {
+                container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><div class="empty-text">Hata: ${error.message}</div></div>`;
+            }
+        }
+        
+        function renderUsersPage() {
+            const container = document.getElementById('usersContent');
+            const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+            const startIndex = (currentUsersPage - 1) * usersPerPage;
+            const endIndex = startIndex + usersPerPage;
+            const pageUsers = filteredUsers.slice(startIndex, endIndex);
+            
+            if (filteredUsers.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><div class="empty-text">Filtre kriterlerine uygun kullanıcı bulunamadı</div></div>';
+                document.getElementById('usersShowingText').textContent = '0 kullanıcı gösteriliyor';
+                document.getElementById('usersCurrentPage').textContent = '0';
+                document.getElementById('usersTotalPages').textContent = '0';
+                document.getElementById('usersPrevBtn').disabled = true;
+                document.getElementById('usersNextBtn').disabled = true;
+                return;
+            }
+            
+            let html = '<table><thead><tr><th>Kullanıcı ID</th><th>Görünen Ad</th><th>Roller</th><th>Odalar</th><th>Aktif Oturum</th><th>İşlemler</th></tr></thead><tbody>';
+            
+            pageUsers.forEach(user => {
+                const adminBadge = user.admin ? '<span class="badge badge-info"><i class="fas fa-crown"></i> Admin</span>' : '<span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-secondary);">Kullanıcı</span>';
+                const lockedBadge = user.locked ? '<span class="badge badge-warning" style="margin-left: 4px;"><i class="fas fa-lock"></i> Kilitli</span>' : '';
+                const bannedBadge = user.shadow_banned ? '<span class="badge badge-danger" style="margin-left: 4px;"><i class="fas fa-ban"></i> Banned</span>' : '';
+                
+                html += `
+                    <tr>
+                        <td onclick="showUserDetails('${user.user_id}')" style="font-family: monospace; color: var(--accent-blue); font-weight: 500; cursor: pointer;">${user.user_id}</td>
+                        <td onclick="showUserDetails('${user.user_id}')" style="cursor: pointer;">${user.displayname || '<em style="color: var(--text-muted);">Yok</em>'}</td>
+                        <td onclick="showUserDetails('${user.user_id}')" style="cursor: pointer;">${adminBadge}${lockedBadge}${bannedBadge}</td>
+                        <td onclick="showUserDetails('${user.user_id}')" style="cursor: pointer;"><span class="badge badge-success">${user.room_count} oda</span></td>
+                        <td onclick="showUserDetails('${user.user_id}')" style="cursor: pointer;"><span class="badge" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green);">${user.active_sessions} oturum</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); openChangePasswordModal('${user.user_id}')" style="padding: 6px 12px; font-size: 13px;">
+                                <i class="fas fa-key"></i> Şifre Değiştir
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+            
+            // Update pagination info
+            document.getElementById('usersShowingText').textContent = `${startIndex + 1}-${Math.min(endIndex, filteredUsers.length)} / ${filteredUsers.length} kullanıcı`;
+            document.getElementById('usersCurrentPage').textContent = currentUsersPage;
+            document.getElementById('usersTotalPages').textContent = totalPages || 1;
+            document.getElementById('usersPrevBtn').disabled = currentUsersPage === 1;
+            document.getElementById('usersNextBtn').disabled = currentUsersPage >= totalPages;
+        }
+        
+        function nextUsersPage() {
+            const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+            if (currentUsersPage < totalPages) {
+                currentUsersPage++;
+                renderUsersPage();
+            }
+        }
+        
+        function previousUsersPage() {
+            if (currentUsersPage > 1) {
+                currentUsersPage--;
+                renderUsersPage();
+            }
+        }
+        
+        function clearUserFilters() {
+            document.getElementById('filterUserId').value = '';
+            document.getElementById('filterDisplayName').value = '';
+            document.getElementById('filterRole').value = '';
+            document.getElementById('filterMinRooms').value = '';
+            document.getElementById('filterMinSessions').value = '';
+            loadUsers();
+        }
+        
+        // User Details Modal
+        async function showUserDetails(userId) {
+            const modal = document.getElementById('userModal');
+            const body = document.getElementById('userModalBody');
+            
+            body.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><div class="loading-text">Yükleniyor...</div></div>';
+            modal.classList.add('show');
+            
+            try {
+                const response = await fetch(`/api/users/${encodeURIComponent(userId)}/details`);
+                const user = await response.json();
+                
+                if (user.error) {
+                    body.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><div class="empty-text">${user.error}</div></div>`;
+                    return;
+                }
+                
+                document.getElementById('userModalTitle').textContent = user.user_id;
+                
+                const adminToggle = user.admin ? 
+                    `<button class="btn btn-danger btn-sm" onclick="toggleAdmin('${userId}', false)"><i class="fas fa-crown-off"></i> Admin Kaldır</button>` :
+                    `<button class="btn btn-primary btn-sm" onclick="toggleAdmin('${userId}', true)"><i class="fas fa-crown"></i> Admin Yap</button>`;
+                
+                let html = `
+                    <div class="mb-3">
+                        <div class="flex-between mb-2">
+                            <h3 style="font-size: 14px; color: var(--text-secondary);">KULLANICI BİLGİLERİ</h3>
+                            ${adminToggle}
+                        </div>
+                        <div style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: 8px;">
+                            <div style="margin-bottom: 12px;">
+                                <strong>Kullanıcı ID:</strong><br>
+                                <span style="font-family: monospace; font-size: 12px; color: var(--text-muted);">${user.user_id}</span>
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <strong>Görünen Ad:</strong> ${user.displayname || '<em style="color: var(--text-muted);">Yok</em>'}
+                            </div>
+                            <div style="margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                                <strong>Roller:</strong>
+                                ${user.admin ? '<span class="badge badge-info"><i class="fas fa-crown"></i> Server Admin</span>' : '<span class="badge" style="background: rgba(255,255,255,0.05);">Normal Kullanıcı</span>'}
+                                ${user.locked ? '<span class="badge badge-warning"><i class="fas fa-lock"></i> Kilitli</span>' : ''}
+                                ${user.shadow_banned ? '<span class="badge badge-danger"><i class="fas fa-ban"></i> Banned</span>' : ''}
+                            </div>
+                            <div>
+                                <strong>Hesap Oluşturma:</strong> ${user.created}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">
+                            ODALAR (${user.rooms.length})
+                        </h3>
+                        <div style="display: grid; gap: 8px;">
+                `;
+                
+                if (user.rooms.length === 0) {
+                    html += '<div style="padding: 20px; text-align: center; color: var(--text-muted);">Hiç odada değil</div>';
+                } else {
+                    user.rooms.forEach(room => {
+                        html += `
+                            <div style="padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-weight: 500; color: var(--text-primary); margin-bottom: 4px;">${room.name}</div>
+                                    <div style="font-size: 11px; color: var(--text-muted); font-family: monospace;">${room.room_id}</div>
+                                </div>
+                                <span class="badge badge-success">${room.member_count} üye</span>
+                            </div>
+                        `;
+                    });
+                }
+                
+                html += `
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">
+                            AKTİF OTURUMLAR / CİHAZLAR (${user.devices.length})
+                        </h3>
+                        <div style="display: grid; gap: 8px;">
+                `;
+                
+                if (user.devices.length === 0) {
+                    html += '<div style="padding: 20px; text-align: center; color: var(--text-muted);">Aktif oturum yok</div>';
+                } else {
+                    user.devices.forEach(device => {
+                        html += `
+                            <div style="padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                    <strong style="font-family: monospace; color: var(--accent-blue);">${device.device_id}</strong>
+                                    <span style="font-size: 11px; color: var(--text-muted);">${device.last_seen}</span>
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">
+                                    <i class="fas fa-network-wired"></i> ${device.ip || 'IP bilinmiyor'}
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-muted);">
+                                    <i class="fas fa-desktop"></i> ${device.user_agent ? device.user_agent.substring(0, 60) + '...' : 'Cihaz bilgisi yok'}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                
+                html += '</div></div>';
+                
+                body.innerHTML = html;
+                
+            } catch (error) {
+                body.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><div class="empty-text">Hata: ${error.message}</div></div>`;
+            }
+        }
+        
+        function closeUserModal() {
+            document.getElementById('userModal').classList.remove('show');
+        }
+        
+        // Change Password Modal Functions
+        function openChangePasswordModal(userId) {
+            document.getElementById('changePasswordUserId').textContent = userId;
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            document.getElementById('passwordError').style.display = 'none';
+            document.getElementById('changePasswordModal').classList.add('show');
+        }
+        
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.remove('show');
+        }
+        
+        async function submitPasswordChange() {
+            const userId = document.getElementById('changePasswordUserId').textContent;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const errorDiv = document.getElementById('passwordError');
+            const errorText = document.getElementById('passwordErrorText');
+            
+            // Validation
+            if (!newPassword || !confirmPassword) {
+                errorText.textContent = 'Lütfen tüm alanları doldurun!';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            if (newPassword.length < 8) {
+                errorText.textContent = 'Şifre en az 8 karakter olmalıdır!';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                errorText.textContent = 'Şifreler eşleşmiyor!';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            // Hide error
+            errorDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch(`/api/users/${encodeURIComponent(userId)}/password`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ new_password: newPassword })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showToast('✅ Şifre başarıyla değiştirildi!', 'success');
+                    closeChangePasswordModal();
+                } else {
+                    errorText.textContent = data.error || 'Şifre değiştirilemedi!';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Password change error:', error);
+                errorText.textContent = 'Sunucu hatası! Lütfen tekrar deneyin.';
+                errorDiv.style.display = 'block';
+            }
+        }
+        
+        async function toggleAdmin(userId, makeAdmin) {
+            const action = makeAdmin ? 'admin yapmak' : 'adminlikten çıkarmak';
+            
+            if (!confirm(`${userId} kullanıcısını ${action} istediğinize emin misiniz?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/users/${encodeURIComponent(userId)}/admin`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin: makeAdmin })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast(makeAdmin ? 'Kullanıcı admin yapıldı!' : 'Admin yetkisi kaldırıldı!', 'success');
+                    closeUserModal();
+                    loadUsers(); // Refresh
+                } else {
+                    showToast(result.error || 'İşlem başarısız', 'error');
+                }
+            } catch (error) {
+                showToast('Hata: ' + error.message, 'error');
+            }
+        }
+        
+        // Create User
+        function openCreateUserModal() {
+            document.getElementById('createUserModal').classList.add('show');
+            document.getElementById('newUsername').value = '';
+            document.getElementById('newUserPassword').value = '';
+            document.getElementById('newUserDisplayname').value = '';
+            document.getElementById('newUserAdmin').checked = false;
+            updateUserIdPreview();
+        }
+        
+        function closeCreateUserModal() {
+            document.getElementById('createUserModal').classList.remove('show');
+        }
+        
+        function updateUserIdPreview() {
+            const username = document.getElementById('newUsername').value.trim();
+            const preview = username ? `@${username}:localhost` : '@kullanici:localhost';
+            document.getElementById('userIdPreview').textContent = preview;
+        }
+        
+        // Add event listener for username input
+        document.addEventListener('DOMContentLoaded', () => {
+            const usernameInput = document.getElementById('newUsername');
+            if (usernameInput) {
+                usernameInput.addEventListener('input', updateUserIdPreview);
+            }
+        });
+        
+        async function confirmCreateUser() {
+            const username = document.getElementById('newUsername').value.trim();
+            const password = document.getElementById('newUserPassword').value;
+            const displayname = document.getElementById('newUserDisplayname').value.trim();
+            const isAdmin = document.getElementById('newUserAdmin').checked;
+            
+            if (!username) {
+                showToast('Lütfen kullanıcı adı girin!', 'error');
+                return;
+            }
+            
+            if (!password || password.length < 8) {
+                showToast('Şifre en az 8 karakter olmalı!', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        displayname: displayname,
+                        admin: isAdmin
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast(`Kullanıcı oluşturuldu: ${result.user_id}`, 'success');
+                    closeCreateUserModal();
+                    loadUsers(); // Refresh
+                } else {
+                    showToast(result.error || 'Kullanıcı oluşturulamadı', 'error');
+                }
+            } catch (error) {
+                showToast('Hata: ' + error.message, 'error');
+            }
+        }
+        
+        // Toast Notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = toast.querySelector('.toast-icon');
+            const text = document.getElementById('toastMessage');
+            
+            toast.className = `toast toast-${type} show`;
+            icon.className = `toast-icon fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`;
+            
+            // Convert \n to <br> for multiline messages
+            text.innerHTML = message.replace(/\n/g, '<br>');
+            
+            // Auto-hide after 5 seconds (longer for detailed messages)
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 5000);
+        }
+        
+        // Create Room
+        function openCreateRoomModal() {
+            document.getElementById('createRoomModal').classList.add('show');
+            document.getElementById('newRoomName').value = '';
+            document.getElementById('newRoomPublic').value = 'true';
+        }
+        
+        function closeCreateRoomModal() {
+            document.getElementById('createRoomModal').classList.remove('show');
+        }
+        
+        async function confirmCreateRoom() {
+            const name = document.getElementById('newRoomName').value.trim();
+            if (!name) {
+                showToast('Lütfen oda adı girin!', 'error');
+                return;
+            }
+            
+            const isPublic = document.getElementById('newRoomPublic').value === 'true';
+            
+            try {
+                const response = await fetch('/api/rooms', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, is_public: isPublic })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('Oda başarıyla oluşturuldu!', 'success');
+                    closeCreateRoomModal();
+                    loadRooms();
+                } else {
+                    showToast(result.error || 'Oda oluşturulamadı', 'error');
+                }
+            } catch (error) {
+                showToast('Hata: ' + error.message, 'error');
+            }
+        }
+        
+        // Messages (full implementation)
+        let messagePage = 1;
+        let messagePageSize = 20;
+        let messageTotalPages = 1;
+        
+        async function searchMessages() {
+            messagePage = 1;
+            await loadMessages();
+        }
+        
+        async function loadMessages() {
+            const container = document.getElementById('messagesContent');
+            container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><div class="loading-text">Mesajlar yükleniyor...</div></div>';
+            
+            const params = new URLSearchParams({
+                room_id: document.getElementById('filterRoomId').value,
+                sender: document.getElementById('filterSender').value,
+                receiver: document.getElementById('filterReceiver').value || '',
+                search: document.getElementById('searchQuery').value,
+                start_date: document.getElementById('filterStartDate').value || '',
+                end_date: document.getElementById('filterEndDate').value || '',
+                page: messagePage,
+                page_size: messagePageSize
+            });
+            
+            try {
+                const response = await fetch('/api/messages?' + params);
+                const data = await response.json();
+                
+                if (data.error) {
+                    container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><div class="empty-text">Hata: ${data.error}</div></div>`;
+                    return;
+                }
+                
+                messageTotalPages = data.total_pages;
+                updateMessagePagination();
+                
+                if (data.messages.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><i class="fas fa-search"></i><div class="empty-text">Mesaj bulunamadı</div></div>';
+                    return;
+                }
+                
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 150px;">TARİH/SAAT</th>
+                                <th style="width: 180px;">GÖNDEREN</th>
+                                <th style="width: 200px;">ODA</th>
+                                <th style="width: 180px;">ALICI</th>
+                                <th>MESAJ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                data.messages.forEach(msg => {
+                    const deletedBadge = msg.is_deleted ? 
+                        '<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); margin-left: 6px; font-size: 10px;"><i class="fas fa-trash"></i> SİLİNDİ</span>' : '';
+                    
+                    const messageText = msg.is_deleted ?
+                        `<span style="text-decoration: line-through; color: var(--text-muted);">${msg.message || 'Silindi'}</span> <em style="font-size: 11px; color: var(--accent-red);">(${msg.deleted_by} tarafından silindi)</em>` :
+                        (msg.message || '<em style="color: var(--text-muted);">Boş mesaj</em>');
+                    
+                    html += `
+                        <tr style="${msg.is_deleted ? 'background: rgba(239, 68, 68, 0.03);' : ''} cursor: pointer;" 
+                            onclick="openRoomFromMessage('${msg.room_id}', '${msg.room_name.replace(/'/g, "\\'")}', '${msg.event_id}')"
+                            onmouseover="this.style.background='rgba(74, 144, 226, 0.05)'"
+                            onmouseout="this.style.background='${msg.is_deleted ? 'rgba(239, 68, 68, 0.03)' : 'transparent'}'">
+                            <td style="font-size: 12px; color: var(--text-muted);">${msg.timestamp}</td>
+                            <td style="font-family: monospace; color: var(--accent-blue);">${msg.sender}${deletedBadge}</td>
+                            <td style="color: var(--text-secondary);">${msg.room_name}</td>
+                            <td style="font-family: monospace; color: var(--accent-green);">${msg.recipient}</td>
+                            <td>${messageText}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+                
+            } catch (error) {
+                container.innerHTML = `<div class="empty-state"><i class="fas fa-times-circle"></i><div class="empty-text">Bağlantı hatası: ${error.message}</div></div>`;
+            }
+        }
+        
+        function updateMessagePagination() {
+            const pagination = document.getElementById('messagePagination');
+            
+            if (messageTotalPages > 1) {
+                pagination.style.display = 'flex';
+                pagination.innerHTML = `
+                    <button class="btn btn-secondary btn-sm" onclick="previousMessagePage()" ${messagePage === 1 ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-left"></i> Önceki
+                    </button>
+                    <div style="padding: 0 16px; color: var(--text-secondary);">
+                        Sayfa <strong>${messagePage}</strong> / <strong>${messageTotalPages}</strong>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="nextMessagePage()" ${messagePage === messageTotalPages ? 'disabled' : ''}>
+                        İleri <i class="fas fa-chevron-right"></i>
+                    </button>
+                `;
+            } else {
+                pagination.style.display = 'none';
+            }
+        }
+        
+        function nextMessagePage() {
+            if (messagePage < messageTotalPages) {
+                messagePage++;
+                loadMessages();
+            }
+        }
+        
+        function previousMessagePage() {
+            if (messagePage > 1) {
+                messagePage--;
+                loadMessages();
+            }
+        }
+        
+        function exportData(format) {
+            const params = new URLSearchParams({
+                room_id: document.getElementById('filterRoomId').value,
+                sender: document.getElementById('filterSender').value,
+                search: document.getElementById('searchQuery').value,
+                format: format
+            });
+            window.location.href = '/api/export?' + params;
+        }
+        
+        function applyQuickDateFilter() {
+            const quickFilter = document.getElementById('quickDateFilter').value;
+            const now = new Date();
+            
+            if (quickFilter === 'all') {
+                document.getElementById('filterStartDate').value = '';
+                document.getElementById('filterEndDate').value = '';
+                return;
+            }
+            
+            if (!quickFilter) return;
+            
+            let startDate = new Date();
+            
+            switch(quickFilter) {
+                case '1h':
+                    startDate.setHours(now.getHours() - 1);
+                    break;
+                case '1d':
+                    startDate.setDate(now.getDate() - 1);
+                    break;
+                case '1w':
+                    startDate.setDate(now.getDate() - 7);
+                    break;
+                case '1m':
+                    startDate.setMonth(now.getMonth() - 1);
+                    break;
+            }
+            
+            // Format to datetime-local input format
+            const formatDateTime = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                return `${year}-${month}-${day}T${hours}:${minutes}`;
+            };
+            
+            document.getElementById('filterStartDate').value = formatDateTime(startDate);
+            document.getElementById('filterEndDate').value = formatDateTime(now);
+        }
+        
+        function clearFilters() {
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            document.getElementById('quickDateFilter').value = '';
+            document.getElementById('filterRoomId').value = '';
+            document.getElementById('filterSender').value = '';
+            document.getElementById('filterReceiver').value = '';
+            document.getElementById('searchQuery').value = '';
+            
+            messagePage = 1;
+            
+            document.getElementById('messagesContent').innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <div class="empty-text">Mesajları görüntülemek için filtreleri kullanın</div>
+                </div>
+            `;
+            
+            document.getElementById('messagePagination').style.display = 'none';
+        }
+        
+        // Enter key support for message search
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputs = ['filterRoomId', 'filterSender', 'searchQuery'];
+            inputs.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') searchMessages();
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+

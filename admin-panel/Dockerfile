@@ -1,0 +1,36 @@
+# Admin Panel Dockerfile for Railway (Build context: admin-panel/)
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first (for better caching)
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application files (force no-cache)
+COPY admin-panel-server.py .
+COPY admin-panel-ui-modern.html .
+COPY 1.svg .
+RUN echo "Build timestamp: $(date)" > /app/build.txt
+RUN echo "Version: 2.1.0 - Password change feature" > /app/version.txt
+RUN find /app -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+
+# Expose port (Railway uses PORT env var)
+EXPOSE 8080
+
+# Environment variables will be set in Railway
+ENV FLASK_APP=admin-panel-server.py
+ENV PYTHONUNBUFFERED=1
+
+# Start command
+CMD ["python", "-u", "admin-panel-server.py"]
+
