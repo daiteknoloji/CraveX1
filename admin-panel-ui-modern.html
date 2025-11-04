@@ -27,11 +27,50 @@
             --header-bg: #0f2e24;
         }
         
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideInUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
             overflow-x: hidden;
+            animation: fadeIn 0.3s ease-in-out;
         }
         
         /* Layout */
@@ -100,11 +139,13 @@
             align-items: center;
             gap: 14px;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             color: rgba(255, 255, 255, 0.7);
             font-size: 15px;
             font-weight: 500;
             border-radius: 10px;
+            animation: slideInLeft 0.4s ease-out backwards;
+            animation-delay: calc(var(--item-index, 0) * 0.1s);
             position: relative;
         }
         
@@ -203,6 +244,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            animation: fadeIn 0.4s ease-in-out;
         }
         
         /* Header */
@@ -259,12 +301,14 @@
             padding: 24px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            animation: slideInUp 0.5s ease-out backwards;
+            animation-delay: calc(var(--card-index, 0) * 0.1s);
         }
         
         .stat-card:hover {
             border-color: var(--accent-green);
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(13, 189, 139, 0.15);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 32px rgba(13, 189, 139, 0.2);
         }
         
         .stat-header {
@@ -300,6 +344,7 @@
             font-weight: 700;
             color: var(--text-primary);
             line-height: 1;
+            animation: pulse 2s ease-in-out infinite;
         }
         
         /* Buttons */
@@ -324,8 +369,8 @@
         
         .btn-primary:hover {
             background: var(--accent-green-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(13, 189, 139, 0.4);
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 4px 16px rgba(13, 189, 139, 0.4);
         }
         
         .btn-danger {
@@ -799,19 +844,19 @@
             </div>
             
             <nav class="nav-menu">
-                <div class="nav-item active" onclick="showPage('dashboard')">
+                <div class="nav-item active" onclick="showPage('dashboard')" style="--item-index: 0">
                     <i class="fas fa-home"></i>
                     <span>Dashboard</span>
                 </div>
-                <div class="nav-item" onclick="showPage('rooms')">
+                <div class="nav-item" onclick="showPage('rooms')" style="--item-index: 1">
                     <i class="fas fa-door-open"></i>
                     <span>Odalar</span>
                 </div>
-                <div class="nav-item" onclick="showPage('users')">
+                <div class="nav-item" onclick="showPage('users')" style="--item-index: 2">
                     <i class="fas fa-users"></i>
                     <span>Kullanıcılar</span>
                 </div>
-                <div class="nav-item" onclick="showPage('messages')">
+                <div class="nav-item" onclick="showPage('messages')" style="--item-index: 3">
                     <i class="fas fa-comments"></i>
                     <span>Mesajlar</span>
                 </div>
@@ -850,7 +895,7 @@
                 <!-- Dashboard Page -->
                 <div class="page-view active" id="page-dashboard">
                     <div class="stats-grid">
-                        <div class="stat-card">
+                        <div class="stat-card" style="--card-index: 0">
                             <div class="stat-header">
                                 <div>
                                     <div class="stat-label">Toplam Mesaj</div>
@@ -859,7 +904,7 @@
                                 <div class="stat-icon"><i class="fas fa-comments"></i></div>
                             </div>
                         </div>
-                        <div class="stat-card">
+                        <div class="stat-card" style="--card-index: 1">
                             <div class="stat-header">
                                 <div>
                                     <div class="stat-label">Toplam Oda</div>
@@ -868,7 +913,7 @@
                                 <div class="stat-icon"><i class="fas fa-door-open"></i></div>
                             </div>
                         </div>
-                        <div class="stat-card">
+                        <div class="stat-card" style="--card-index: 2">
                             <div class="stat-header">
                                 <div>
                                     <div class="stat-label">Aktif Kullanıcı</div>
@@ -877,7 +922,7 @@
                                 <div class="stat-icon"><i class="fas fa-users"></i></div>
                             </div>
                         </div>
-                        <div class="stat-card">
+                        <div class="stat-card" style="--card-index: 3">
                             <div class="stat-header">
                                 <div>
                                     <div class="stat-label">Sistem Durumu</div>
