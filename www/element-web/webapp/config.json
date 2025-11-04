@@ -1,15 +1,15 @@
 {
     "default_server_config": {
         "m.homeserver": {
-            "base_url": "http://localhost:8008",
-            "server_name": "localhost"
+            "base_url": "https://cravex1-production.up.railway.app",
+            "server_name": "cravex1-production.up.railway.app"
         }
     },
     "disable_custom_urls": false,
     "disable_guests": false,
     "disable_login_language_selector": false,
     "disable_3pid_login": false,
-    "brand": "Element",
+    "brand": "CraveX",
     "integrations_ui_url": "https://scalar.vector.im/",
     "integrations_rest_url": "https://scalar.vector.im/api",
     "integrations_widgets_urls": [
@@ -21,9 +21,10 @@
     "default_country_code": "TR",
     "show_labs_settings": false,
     "default_federate": true,
-    "default_theme": "light",
+    "default_theme": "dark",
+    "brand": "Cravex Chat",
     "room_directory": {
-        "servers": ["localhost"]
+        "servers": ["cravex1-production.up.railway.app"]
     },
     "jitsi": {
         "preferred_domain": "meet.jit.si"
@@ -31,7 +32,7 @@
     "element_call": {
         "url": "https://call.element.io",
         "participant_limit": 8,
-        "brand": "Element Call"
+        "brand": "Call"
     },
     "setting_defaults": {
         "breadcrumbs": true,
@@ -40,10 +41,23 @@
         "UIFeature.deactivate": true,
         "UIFeature.advancedEncryption": false,
         "UIFeature.encryption": false,
-        "UIFeature.roomEncryption": false
+        "UIFeature.roomEncryption": false,
+        "MessageComposerInput.autoReplaceEmoji": true,
+        "MessageComposerInput.suggestEmoji": true,
+        "sendTypingNotifications": true,
+        "showTypingNotifications": true,
+        "ctrlFForSearch": false,
+        "MessageComposerInput.showStickersButton": true,
+        "TextualBody.enableBigEmoji": true,
+        "scrollToBottomOnMessageSent": true,
+        "Pill.shouldShowPillAvatar": true,
+        "useCompactLayout": false
     },
     "features": {
-        "feature_encryption": "disable"
+        "feature_encryption": "disable",
+        "feature_video_rooms": true,
+        "feature_element_call_video_rooms": true,
+        "feature_new_room_decoration_ui": true
     },
     "force_disable_encryption": true,
     "disable_encryption": true,
@@ -55,6 +69,17 @@
     "disable_advanced_encryption_ui": true,
     "customisations": {
         "disable_encryption_ui": true
-    }
+    },
+    "mobile_guide_toast": false,
+    "mobile_builds": {
+        "ios": null,
+        "android": null,
+        "fdroid": null
+    },
+    "desktop_builds": {
+        "available": false
+    },
+    "show_mobile_guide": false,
+    "permalink_prefix": "https://matrix.to"
 }
 
