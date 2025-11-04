@@ -960,20 +960,77 @@
                 
                 <!-- Rooms Page -->
                 <div class="page-view" id="page-rooms">
-                    <div class="flex-between mb-3">
-                        <div class="search-bar" style="flex: 1; margin-bottom: 0; margin-right: 16px;">
-                            <i class="fas fa-search search-icon"></i>
-                            <input type="text" class="search-input" id="roomSearch" placeholder="Oda ara..." onkeyup="filterRooms()">
+                    <!-- Filters Card -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-filter"></i>
+                                Oda Filtreleri
+                            </div>
+                            <button class="btn btn-primary" onclick="openCreateRoomModal()">
+                                <i class="fas fa-plus"></i> Yeni Oda Oluştur
+                            </button>
                         </div>
-                        <button class="btn btn-primary" onclick="openCreateRoomModal()">
-                            <i class="fas fa-plus"></i> Yeni Oda Oluştur
-                        </button>
+                        <div class="card-body">
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                                <div class="form-group">
+                                    <label class="form-label">Oda Ara</label>
+                                    <input type="text" class="form-input" id="roomSearch" placeholder="Oda adı veya ID...">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Oluşturan</label>
+                                    <input type="text" class="form-input" id="filterRoomCreator" placeholder="@user:domain">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Minimum Üye</label>
+                                    <input type="number" class="form-input" id="filterMinMembers" placeholder="0" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Oda Tipi</label>
+                                    <select class="form-input" id="filterRoomType">
+                                        <option value="">Tümü</option>
+                                        <option value="dm">DM (2 kişi)</option>
+                                        <option value="group">Grup (3+ kişi)</option>
+                                        <option value="public">Herkese Açık</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 mt-3">
+                                <button class="btn btn-primary" onclick="loadRooms()">
+                                    <i class="fas fa-search"></i> Filtrele
+                                </button>
+                                <button class="btn btn-secondary" onclick="clearRoomFilters()">
+                                    <i class="fas fa-times"></i> Temizle
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div id="roomsContent" class="rooms-grid">
-                        <div class="loading">
-                            <i class="fas fa-spinner fa-spin"></i>
-                            <div class="loading-text">Odalar yükleniyor...</div>
+                    <!-- Rooms Table -->
+                    <div class="card">
+                        <div class="card-body" id="roomsContent">
+                            <div class="loading">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <div class="loading-text">Odalar yükleniyor...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="flex-between mt-3">
+                        <div class="pagination-info">
+                            <span id="roomsShowingText">0 oda gösteriliyor</span>
+                        </div>
+                        <div class="pagination">
+                            <button class="btn btn-secondary" id="roomsPrevBtn" onclick="previousRoomsPage()" disabled>
+                                <i class="fas fa-chevron-left"></i> Önceki
+                            </button>
+                            <span class="pagination-info">
+                                Sayfa <strong id="roomsCurrentPage">1</strong> / <strong id="roomsTotalPages">1</strong>
+                            </span>
+                            <button class="btn btn-secondary" id="roomsNextBtn" onclick="nextRoomsPage()" disabled>
+                                Sonraki <i class="fas fa-chevron-right"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1383,6 +1440,10 @@
         }
         
         // Rooms Management
+        let currentRoomsPage = 1;
+        const roomsPerPage = 20;
+        let filteredRooms = [];
+        
         async function loadRooms() {
             const container = document.getElementById('roomsContent');
             container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><div class="loading-text">Odalar yükleniyor...</div></div>';
@@ -1392,56 +1453,120 @@
                 const data = await response.json();
                 
                 allRooms = data.rooms;
-                renderRooms(allRooms);
+                
+                // Apply filters
+                filteredRooms = allRooms.filter(room => {
+                    // Search filter
+                    const searchTerm = document.getElementById('roomSearch').value.toLowerCase();
+                    if (searchTerm && !room.name.toLowerCase().includes(searchTerm) && !room.room_id.toLowerCase().includes(searchTerm)) {
+                        return false;
+                    }
+                    
+                    // Creator filter
+                    const creator = document.getElementById('filterRoomCreator').value.toLowerCase();
+                    if (creator && !room.creator.toLowerCase().includes(creator)) {
+                        return false;
+                    }
+                    
+                    // Min members filter
+                    const minMembers = parseInt(document.getElementById('filterMinMembers').value) || 0;
+                    if (room.member_count < minMembers) {
+                        return false;
+                    }
+                    
+                    // Room type filter
+                    const roomType = document.getElementById('filterRoomType').value;
+                    if (roomType === 'dm' && room.member_count !== 2) return false;
+                    if (roomType === 'group' && room.member_count < 3) return false;
+                    if (roomType === 'public' && !room.is_public) return false;
+                    
+                    return true;
+                });
+                
+                // Reset to page 1
+                currentRoomsPage = 1;
+                renderRoomsPage();
                 
             } catch (error) {
                 container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><div class="empty-text">Hata: ${error.message}</div></div>`;
             }
         }
         
-        function renderRooms(rooms) {
+        function renderRoomsPage() {
             const container = document.getElementById('roomsContent');
+            const totalPages = Math.ceil(filteredRooms.length / roomsPerPage);
+            const startIndex = (currentRoomsPage - 1) * roomsPerPage;
+            const endIndex = startIndex + roomsPerPage;
+            const pageRooms = filteredRooms.slice(startIndex, endIndex);
             
-            if (rooms.length === 0) {
-                container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><div class="empty-text">Oda bulunamadı</div></div>';
+            if (filteredRooms.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-door-open"></i><div class="empty-text">Filtre kriterlerine uygun oda bulunamadı</div></div>';
+                document.getElementById('roomsShowingText').textContent = '0 oda gösteriliyor';
+                document.getElementById('roomsCurrentPage').textContent = '0';
+                document.getElementById('roomsTotalPages').textContent = '0';
+                document.getElementById('roomsPrevBtn').disabled = true;
+                document.getElementById('roomsNextBtn').disabled = true;
                 return;
             }
             
-            let html = '';
-            rooms.forEach(room => {
+            let html = '<table><thead><tr><th>Oda Adı</th><th>Oluşturan</th><th>Üye Sayısı</th><th>Mesaj</th><th>Tür</th></tr></thead><tbody>';
+            
+            pageRooms.forEach(room => {
+                const roomType = room.member_count === 2 ? '<span class="badge badge-info"><i class="fas fa-comment"></i> DM</span>' :
+                                room.is_public ? '<span class="badge badge-success"><i class="fas fa-globe"></i> Public</span>' :
+                                '<span class="badge badge-warning"><i class="fas fa-lock"></i> Private</span>';
+                
                 html += `
-                    <div class="room-card" onclick="showRoomDetails('${room.room_id}')">
-                        <div class="room-card-header">
-                            <div>
-                                <div class="room-name">${room.name}</div>
-                                <div class="room-id">${room.room_id}</div>
-                            </div>
-                            ${room.is_public ? '<span class="badge badge-success"><i class="fas fa-globe"></i> Public</span>' : '<span class="badge badge-warning"><i class="fas fa-lock"></i> Private</span>'}
-                        </div>
-                        <div class="room-stats">
-                            <div class="room-stat">
-                                <i class="fas fa-users"></i>
-                                <span>${room.member_count} üye</span>
-                            </div>
-                            <div class="room-stat">
-                                <i class="fas fa-comments"></i>
-                                <span>${room.message_count} mesaj</span>
-                            </div>
-                        </div>
-                    </div>
+                    <tr onclick="showRoomDetails('${room.room_id}')" style="cursor: pointer;">
+                        <td>
+                            <div style="font-weight: 500; color: var(--text-primary);">${room.name}</div>
+                            <div style="font-size: 11px; font-family: monospace; color: var(--text-muted); margin-top: 2px;">${room.room_id}</div>
+                        </td>
+                        <td style="font-family: monospace; color: var(--accent-blue);">${room.creator}</td>
+                        <td><span class="badge badge-success">${room.member_count} üye</span></td>
+                        <td><span class="badge" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green);">${room.message_count} mesaj</span></td>
+                        <td>${roomType}</td>
+                    </tr>
                 `;
             });
             
+            html += '</tbody></table>';
             container.innerHTML = html;
+            
+            // Update pagination
+            document.getElementById('roomsShowingText').textContent = `${startIndex + 1}-${Math.min(endIndex, filteredRooms.length)} / ${filteredRooms.length} oda`;
+            document.getElementById('roomsCurrentPage').textContent = currentRoomsPage;
+            document.getElementById('roomsTotalPages').textContent = totalPages || 1;
+            document.getElementById('roomsPrevBtn').disabled = currentRoomsPage === 1;
+            document.getElementById('roomsNextBtn').disabled = currentRoomsPage >= totalPages;
         }
         
+        function nextRoomsPage() {
+            const totalPages = Math.ceil(filteredRooms.length / roomsPerPage);
+            if (currentRoomsPage < totalPages) {
+                currentRoomsPage++;
+                renderRoomsPage();
+            }
+        }
+        
+        function previousRoomsPage() {
+            if (currentRoomsPage > 1) {
+                currentRoomsPage--;
+                renderRoomsPage();
+            }
+        }
+        
+        function clearRoomFilters() {
+            document.getElementById('roomSearch').value = '';
+            document.getElementById('filterRoomCreator').value = '';
+            document.getElementById('filterMinMembers').value = '';
+            document.getElementById('filterRoomType').value = '';
+            loadRooms();
+        }
+        
+        // Legacy function (kept for compatibility)
         function filterRooms() {
-            const search = document.getElementById('roomSearch').value.toLowerCase();
-            const filtered = allRooms.filter(room => 
-                room.name.toLowerCase().includes(search) ||
-                room.room_id.toLowerCase().includes(search)
-            );
-            renderRooms(filtered);
+            loadRooms();
         }
         
         // Room Details
