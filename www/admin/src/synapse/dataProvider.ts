@@ -1,4 +1,4 @@
-msajl{ stringify } from "query-string";
+import { stringify } from "query-string";
 import {
   DataProvider,
   DeleteParams,
