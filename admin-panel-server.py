@@ -1804,6 +1804,122 @@ def toggle_user_admin(user_id):
         print(f"[HATA] PUT /api/users/{user_id}/admin - {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/users/<user_id>/password', methods=['PUT'])
+@login_required
+def change_user_password(user_id):
+    """Change user password"""
+    try:
+        new_password = request.json.get('new_password', '').strip()
+        
+        if not new_password:
+            return jsonify({'error': 'Yeni şifre gerekli', 'success': False}), 400
+        
+        if len(new_password) < 8:
+            return jsonify({'error': 'Şifre en az 8 karakter olmalıdır', 'success': False}), 400
+        
+        # Try Matrix Admin API first
+        try:
+            import requests
+            import bcrypt
+            
+            conn = get_db_connection()
+            cur = conn.cursor()
+            
+            # Get admin token
+            cur.execute(
+                "SELECT token FROM access_tokens WHERE user_id = %s ORDER BY id DESC LIMIT 1",
+                (ADMIN_USER_ID,)
+            )
+            token_row = cur.fetchone()
+            admin_token = token_row[0] if token_row else None
+            
+            # If no token, try auto-login
+            if not admin_token:
+                admin_username = os.getenv('ADMIN_USERNAME', 'admin')
+                admin_password = os.getenv('ADMIN_PASSWORD')
+                synapse_url = os.getenv('SYNAPSE_URL', 'http://localhost:8008')
+                
+                if admin_password:
+                    print(f"[INFO] No admin token, attempting auto-login for password change...")
+                    try:
+                        login_response = requests.post(
+                            f'{synapse_url}/_matrix/client/v3/login',
+                            json={
+                                'type': 'm.login.password',
+                                'identifier': {'type': 'm.id.user', 'user': admin_username},
+                                'password': admin_password
+                            },
+                            timeout=10
+                        )
+                        
+                        if login_response.status_code == 200:
+                            admin_token = login_response.json().get('access_token')
+                            print(f"[INFO] Auto-login successful!")
+                    except Exception as login_error:
+                        print(f"[WARN] Auto-login failed: {login_error}")
+            
+            cur.close()
+            conn.close()
+            
+            # If we have a token, use Matrix Admin API
+            if admin_token:
+                synapse_url = os.getenv('SYNAPSE_URL', 'http://localhost:8008')
+                headers = {
+                    'Authorization': f'Bearer {admin_token}',
+                    'Content-Type': 'application/json'
+                }
+                
+                # Reset password via Synapse Admin API
+                api_url = f'{synapse_url}/_synapse/admin/v1/reset_password/{user_id}'
+                response = requests.post(api_url, headers=headers, json={'new_password': new_password, 'logout_devices': False}, timeout=10)
+                
+                if response.status_code == 200:
+                    return jsonify({
+                        'success': True,
+                        'message': f'Şifre başarıyla değiştirildi (Matrix API)',
+                        'method': 'matrix_api'
+                    })
+                else:
+                    print(f"[WARN] Matrix API password change failed: {response.status_code} - {response.text[:200]}")
+                    # Fallback to database method
+            
+            # Fallback: Database method
+            print(f"[INFO] Using database fallback for password change...")
+            conn = get_db_connection()
+            cur = conn.cursor()
+            
+            # Hash password with bcrypt
+            password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            
+            # Update password in database
+            cur.execute("""
+                UPDATE users SET password_hash = %s WHERE name = %s
+            """, (password_hash, user_id))
+            
+            conn.commit()
+            affected_rows = cur.rowcount
+            cur.close()
+            conn.close()
+            
+            if affected_rows > 0:
+                return jsonify({
+                    'success': True,
+                    'message': f'Şifre başarıyla değiştirildi (Database)',
+                    'method': 'database'
+                })
+            else:
+                return jsonify({'error': 'Kullanıcı bulunamadı', 'success': False}), 404
+                
+        except Exception as api_error:
+            print(f"[ERROR] Password change error: {api_error}")
+            return jsonify({'error': f'Şifre değiştirilemedi: {str(api_error)}', 'success': False}), 500
+        
+    except Exception as e:
+        print(f"[HATA] PUT /api/users/{user_id}/password - {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e), 'success': False}), 500
+
 @app.route('/api/users', methods=['POST'])
 @login_required
 def create_user():

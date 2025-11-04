@@ -1078,17 +1078,6 @@
                                     <label class="form-label">Minimum Aktif Oturum</label>
                                     <input type="number" class="form-input" id="filterMinSessions" placeholder="0" min="0">
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label">Son Görülme</label>
-                                    <select class="form-input" id="filterLastSeen">
-                                        <option value="">Tümü</option>
-                                        <option value="1h">Son 1 Saat</option>
-                                        <option value="1d">Son 1 Gün</option>
-                                        <option value="1w">Son 1 Hafta</option>
-                                        <option value="1m">Son 1 Ay</option>
-                                        <option value="offline">Çevrimdışı (1 ay+)</option>
-                                    </select>
-                                </div>
                             </div>
                             <div class="flex gap-2 mt-3">
                                 <button class="btn btn-primary" onclick="loadUsers()">
@@ -1384,6 +1373,38 @@
                     <i class="fas fa-spinner fa-spin"></i>
                     <div class="loading-text">Yükleniyor...</div>
                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Change Password Modal -->
+    <div class="modal-overlay" id="changePasswordModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Şifre Değiştir</h2>
+                <button class="modal-close" onclick="closeChangePasswordModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Kullanıcı:</label>
+                    <div class="form-input" id="changePasswordUserId" style="background: rgba(255,255,255,0.03); cursor: not-allowed;" readonly></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Yeni Şifre:</label>
+                    <input type="password" class="form-input" id="newPassword" placeholder="En az 8 karakter" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Yeni Şifre (Tekrar):</label>
+                    <input type="password" class="form-input" id="confirmPassword" placeholder="Şifrenizi tekrar girin" required>
+                </div>
+                <div id="passwordError" style="color: var(--danger); font-size: 14px; margin-bottom: 12px; display: none;">
+                    <i class="fas fa-exclamation-triangle"></i> <span id="passwordErrorText"></span>
+                </div>
+                <button class="btn btn-primary" onclick="submitPasswordChange()" style="width: 100%;">
+                    <i class="fas fa-save"></i> Şifreyi Değiştir
+                </button>
             </div>
         </div>
     </div>
@@ -2091,23 +2112,25 @@
                 return;
             }
             
-            let html = '<table><thead><tr><th>Kullanıcı ID</th><th>Görünen Ad</th><th>Roller</th><th>Odalar</th><th>Aktif Oturum</th><th>Son Görülme</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>Kullanıcı ID</th><th>Görünen Ad</th><th>Roller</th><th>Odalar</th><th>Aktif Oturum</th><th>İşlemler</th></tr></thead><tbody>';
             
             pageUsers.forEach(user => {
                 const adminBadge = user.admin ? '<span class="badge badge-info"><i class="fas fa-crown"></i> Admin</span>' : '<span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-secondary);">Kullanıcı</span>';
                 const lockedBadge = user.locked ? '<span class="badge badge-warning" style="margin-left: 4px;"><i class="fas fa-lock"></i> Kilitli</span>' : '';
                 const bannedBadge = user.shadow_banned ? '<span class="badge badge-danger" style="margin-left: 4px;"><i class="fas fa-ban"></i> Banned</span>' : '';
                 
-                const lastSeen = user.last_seen ? new Date(user.last_seen).toLocaleString('tr-TR') : '<em style="color: var(--text-muted);">Hiç görülmedi</em>';
-                
                 html += `
-                    <tr onclick="showUserDetails('${user.user_id}')" style="cursor: pointer;">
-                        <td style="font-family: monospace; color: var(--accent-blue); font-weight: 500;">${user.user_id}</td>
-                        <td>${user.displayname || '<em style="color: var(--text-muted);">Yok</em>'}</td>
-                        <td>${adminBadge}${lockedBadge}${bannedBadge}</td>
-                        <td><span class="badge badge-success">${user.room_count} oda</span></td>
-                        <td><span class="badge" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green);">${user.active_sessions} oturum</span></td>
-                        <td style="font-size: 12px; color: var(--text-muted);">${lastSeen}</td>
+                    <tr>
+                        <td onclick="showUserDetails('${user.user_id}')" style="font-family: monospace; color: var(--accent-blue); font-weight: 500; cursor: pointer;">${user.user_id}</td>
+                        <td onclick="showUserDetails('${user.user_id}')" style="cursor: pointer;">${user.displayname || '<em style="color: var(--text-muted);">Yok</em>'}</td>
+                        <td onclick="showUserDetails('${user.user_id}')" style="cursor: pointer;">${adminBadge}${lockedBadge}${bannedBadge}</td>
+                        <td onclick="showUserDetails('${user.user_id}')" style="cursor: pointer;"><span class="badge badge-success">${user.room_count} oda</span></td>
+                        <td onclick="showUserDetails('${user.user_id}')" style="cursor: pointer;"><span class="badge" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green);">${user.active_sessions} oturum</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); openChangePasswordModal('${user.user_id}')" style="padding: 6px 12px; font-size: 13px;">
+                                <i class="fas fa-key"></i> Şifre Değiştir
+                            </button>
+                        </td>
                     </tr>
                 `;
             });
@@ -2191,11 +2214,8 @@
                                 ${user.locked ? '<span class="badge badge-warning"><i class="fas fa-lock"></i> Kilitli</span>' : ''}
                                 ${user.shadow_banned ? '<span class="badge badge-danger"><i class="fas fa-ban"></i> Banned</span>' : ''}
                             </div>
-                            <div style="margin-bottom: 12px;">
-                                <strong>Hesap Oluşturma:</strong> ${user.created}
-                            </div>
                             <div>
-                                <strong>Son Görülme:</strong> <span style="color: var(--accent-green);">${user.last_seen}</span>
+                                <strong>Hesap Oluşturma:</strong> ${user.created}
                             </div>
                         </div>
                     </div>
@@ -2266,6 +2286,71 @@
         
         function closeUserModal() {
             document.getElementById('userModal').classList.remove('show');
+        }
+        
+        // Change Password Modal Functions
+        function openChangePasswordModal(userId) {
+            document.getElementById('changePasswordUserId').textContent = userId;
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            document.getElementById('passwordError').style.display = 'none';
+            document.getElementById('changePasswordModal').classList.add('show');
+        }
+        
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.remove('show');
+        }
+        
+        async function submitPasswordChange() {
+            const userId = document.getElementById('changePasswordUserId').textContent;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const errorDiv = document.getElementById('passwordError');
+            const errorText = document.getElementById('passwordErrorText');
+            
+            // Validation
+            if (!newPassword || !confirmPassword) {
+                errorText.textContent = 'Lütfen tüm alanları doldurun!';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            if (newPassword.length < 8) {
+                errorText.textContent = 'Şifre en az 8 karakter olmalıdır!';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                errorText.textContent = 'Şifreler eşleşmiyor!';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            // Hide error
+            errorDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch(`/api/users/${encodeURIComponent(userId)}/password`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ new_password: newPassword })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showToast('✅ Şifre başarıyla değiştirildi!', 'success');
+                    closeChangePasswordModal();
+                } else {
+                    errorText.textContent = data.error || 'Şifre değiştirilemedi!';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Password change error:', error);
+                errorText.textContent = 'Sunucu hatası! Lütfen tekrar deneyin.';
+                errorDiv.style.display = 'block';
+            }
         }
         
         async function toggleAdmin(userId, makeAdmin) {
