@@ -1768,6 +1768,8 @@ def create_user():
         
         # Try Matrix Admin API first (if running locally with Synapse)
         try:
+            import requests
+            
             conn = get_db_connection()
             cur = conn.cursor()
             
@@ -1782,6 +1784,36 @@ def create_user():
             
             cur.close()
             conn.close()
+            
+            # If no token, try to auto-login admin to get one
+            if not admin_token:
+                admin_username = os.getenv('ADMIN_USERNAME', 'admin')
+                admin_password = os.getenv('ADMIN_PASSWORD')
+                synapse_url = os.getenv('SYNAPSE_URL', 'http://localhost:8008')
+                
+                if admin_password:
+                    print(f"[INFO] No admin token found, attempting auto-login for {ADMIN_USER_ID}...")
+                    try:
+                        login_response = requests.post(
+                            f'{synapse_url}/_matrix/client/v3/login',
+                            json={
+                                'type': 'm.login.password',
+                                'identifier': {
+                                    'type': 'm.id.user',
+                                    'user': admin_username
+                                },
+                                'password': admin_password
+                            },
+                            timeout=10
+                        )
+                        
+                        if login_response.status_code == 200:
+                            admin_token = login_response.json().get('access_token')
+                            print(f"[INFO] Auto-login successful! Token obtained: {admin_token[:20]}...")
+                        else:
+                            print(f"[WARN] Auto-login failed: {login_response.status_code} - {login_response.text[:100]}")
+                    except Exception as login_error:
+                        print(f"[WARN] Auto-login error: {login_error}")
             
             if admin_token:
                 # Matrix API available - use it
