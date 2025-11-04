@@ -133,6 +133,7 @@ user_directory:
 
 ## TURN/STUN Server for Video Calls ##
 turn_uris:
+  - "turn:turn-server-production-2809.up.railway.app:3478?transport=tcp"
   - "turn:relay.metered.ca:80"
   - "turn:relay.metered.ca:443"
   - "turn:relay.metered.ca:80?transport=tcp"
