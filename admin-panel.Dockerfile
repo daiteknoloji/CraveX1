@@ -21,6 +21,7 @@ COPY admin-panel-server.py .
 COPY admin-panel-ui-modern.html .
 COPY 1.svg .
 RUN echo "Build timestamp: $(date)" > /app/build.txt
+RUN echo "Version: 2.1.0 - Password change feature" > /app/version.txt
 RUN find /app -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 
 # Expose port (Railway uses PORT env var)
