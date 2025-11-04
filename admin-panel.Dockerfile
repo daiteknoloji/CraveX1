@@ -16,10 +16,11 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application files
+# Copy application files (force no-cache)
 COPY admin-panel-server.py .
 COPY admin-panel-ui-modern.html .
 COPY 1.svg .
+RUN echo "Build timestamp: $(date)" > /app/build.txt
 
 # Expose port (Railway uses PORT env var)
 EXPOSE 8080
