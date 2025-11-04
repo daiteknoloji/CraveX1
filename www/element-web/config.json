@@ -28,11 +28,6 @@
     "jitsi": {
         "preferred_domain": "meet.jit.si"
     },
-    "element_call": {
-        "url": "https://call.element.io",
-        "participant_limit": 8,
-        "brand": "CraveX Call"
-    },
     "voip": {
         "turn_servers": [
             {
@@ -68,8 +63,8 @@
     },
     "features": {
         "feature_encryption": "disable",
-        "feature_video_rooms": true,
-        "feature_element_call_video_rooms": true,
+        "feature_video_rooms": false,
+        "feature_element_call_video_rooms": false,
         "feature_new_room_decoration_ui": true
     },
     "force_disable_encryption": true,
