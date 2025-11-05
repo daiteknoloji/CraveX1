@@ -22,6 +22,7 @@ experimental_features:
   msc3886_endpoint: /refresh
 
 # Allow CORS from Netlify domains
+# Railway'de reverse proxy var, bu yüzden CORS headers'ı doğru şekilde göndermeliyiz
 cors_allowed_origins:
   - "https://vcravex1.netlify.app"
   - "https://cravex-admin.netlify.app"
