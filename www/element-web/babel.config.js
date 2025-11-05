@@ -28,9 +28,16 @@ module.exports = {
         ],
     ],
     plugins: [
-        // IMPORTANT: Babel processes presets FIRST (in reverse order), then plugins (in normal order)
-        // So @babel/preset-typescript (LAST in presets array) runs FIRST among presets
-        // Then plugins run in order below
+        // CRITICAL: Add TypeScript plugin explicitly BEFORE class-properties to ensure declare fields are transformed
+        // Even though TypeScript preset runs first (because it's last in presets array), we need to ensure
+        // that the TypeScript plugin specifically removes declare fields before class-properties plugin runs
+        [
+            "@babel/plugin-transform-typescript",
+            {
+                allowDeclareFields: true,
+                allowNamespaces: true,
+            },
+        ],
         
         "@babel/plugin-proposal-export-default-from",
         "@babel/plugin-transform-numeric-separator",
