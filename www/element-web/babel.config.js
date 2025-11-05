@@ -13,7 +13,15 @@ module.exports = {
                 include: ["@babel/plugin-transform-class-properties"],
             },
         ],
-        ["@babel/preset-typescript", { allowDeclareFields: true, allowNamespaces: true }],
+        [
+            "@babel/preset-typescript",
+            {
+                allowDeclareFields: true,
+                allowNamespaces: true,
+                // Ensure TypeScript parser handles private methods correctly
+                isTSX: true,
+            },
+        ],
         "@babel/preset-react",
     ],
     plugins: [
