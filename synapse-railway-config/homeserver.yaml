@@ -1,6 +1,6 @@
 ## Server ##
 server_name: "cravex1-production.up.railway.app"
-pid_file: /data/homeserver.pid
+pid_file: /tmp/homeserver.pid
 public_baseurl: "https://cravex1-production.up.railway.app/"
 web_client_location: "https://vcravex1.netlify.app"
 serve_server_wellknown: true
@@ -46,7 +46,7 @@ database:
 # Railway'de persistent volume yok, varsayılan log ayarları kullanılacak
 
 ## Media Store ##
-media_store_path: "/data/media_store"
+media_store_path: "/tmp/media_store"
 max_upload_size: 50M
 max_image_pixels: 32M
 dynamic_thumbnails: true
@@ -71,7 +71,7 @@ report_stats: false
 app_service_config_files: []
 
 ## Signing Keys ##
-signing_key_path: "/data/signing.key"
+signing_key_path: "/tmp/signing.key"
 trusted_key_servers:
   - server_name: "matrix.org"
 suppress_key_server_warning: true
