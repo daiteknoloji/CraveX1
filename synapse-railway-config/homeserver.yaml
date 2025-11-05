@@ -140,11 +140,12 @@ user_directory:
 # Bu yüzden Metered.ca credentials'ları config.json'da kalacak
 # Synapse sadece TURN server URL'lerini verecek
 turn_uris:
-  # Metered.ca TURN Server (Öncelikli)
-  - "turn:relay.metered.ca:80"
-  - "turn:relay.metered.ca:443"
-  - "turn:relay.metered.ca:80?transport=tcp"
-  - "turn:relay.metered.ca:443?transport=tcp"
+  # Metered.ca TURN Server (Öncelikli - YENİ URL'LER)
+  - "stun:stun.relay.metered.ca:80"
+  - "turn:global.relay.metered.ca:80"
+  - "turn:global.relay.metered.ca:80?transport=tcp"
+  - "turn:global.relay.metered.ca:443"
+  - "turns:global.relay.metered.ca:443?transport=tcp"
   # Matrix.org TURN Server (Fallback)
   - "turn:turn.matrix.org:3478?transport=udp"
   - "turn:turn.matrix.org:3478?transport=tcp"
