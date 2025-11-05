@@ -9,12 +9,20 @@ if [ -z "$POSTGRES_HOST" ]; then
     exit 1
 fi
 
-# Synapse data dizini
-DATA_DIR="/data"
+# Synapse data dizini - Railway'de /tmp dizini yazılabilir
+DATA_DIR="/tmp"
 mkdir -p $DATA_DIR
 
 # homeserver.yaml'ı kopyala ve environment variables ile güncelle
-cp /config/homeserver.yaml $DATA_DIR/homeserver.yaml
+# Önce /data dizininden kontrol et (Dockerfile'dan kopyalanmış olabilir)
+if [ -f /data/homeserver.yaml ]; then
+    cp /data/homeserver.yaml $DATA_DIR/homeserver.yaml
+elif [ -f /config/homeserver.yaml ]; then
+    cp /config/homeserver.yaml $DATA_DIR/homeserver.yaml
+else
+    echo "❌ ERROR: homeserver.yaml not found!"
+    exit 1
+fi
 
 # Server name güncelle
 if [ ! -z "$SYNAPSE_SERVER_NAME" ]; then
@@ -34,7 +42,7 @@ sed -i "s|database: railway|database: $POSTGRES_DB|g" $DATA_DIR/homeserver.yaml
 sed -i "s|host: localhost|host: $POSTGRES_HOST|g" $DATA_DIR/homeserver.yaml
 sed -i "s|port: 5432|port: $POSTGRES_PORT|g" $DATA_DIR/homeserver.yaml
 
-# Signing key oluştur (yoksa)
+# Signing key oluştur (yoksa) - /tmp dizininde
 if [ ! -f "$DATA_DIR/signing.key" ]; then
     echo "🔑 Generating signing key..."
     python3 -m synapse.app.homeserver \
@@ -42,23 +50,9 @@ if [ ! -f "$DATA_DIR/signing.key" ]; then
         --generate-keys
 fi
 
-# Log config oluştur
-cat > $DATA_DIR/log.config <<EOF
-version: 1
-formatters:
-  precise:
-    format: '%(asctime)s - %(name)s - %(lineno)d - %(levelname)s - %(message)s'
-handlers:
-  console:
-    class: logging.StreamHandler
-    formatter: precise
-root:
-  level: INFO
-  handlers: [console]
-loggers:
-  synapse.storage.SQL:
-    level: INFO
-EOF
+# Log config oluşturma - Railway'de log_config disabled, bu yüzden skip ediyoruz
+# Railway varsayılan console logging kullanacak
+echo "📝 Using default console logging (log_config disabled for Railway)"
 
 echo "✅ Configuration complete!"
 echo "📍 Server: $SYNAPSE_SERVER_NAME"
