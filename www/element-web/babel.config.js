@@ -28,14 +28,9 @@ module.exports = {
         ],
     ],
     plugins: [
-        // IMPORTANT: Babel processes presets in REVERSE order (last to first)
-        // So @babel/preset-typescript (LAST in presets array) runs FIRST
-        // This ensures TypeScript processes declare fields before plugins run
-        // Then class-related plugins must run in this specific order:
-        // 1. class-properties (handles regular class fields)
-        // 2. private-methods (handles private methods)
-        // 3. private-property-in-object (handles private fields)
-        // 4. decorators (must run after all class features)
+        // IMPORTANT: Babel processes presets FIRST (in reverse order), then plugins (in normal order)
+        // So @babel/preset-typescript (LAST in presets array) runs FIRST among presets
+        // Then plugins run in order below
         
         "@babel/plugin-proposal-export-default-from",
         "@babel/plugin-transform-numeric-separator",
@@ -52,9 +47,9 @@ module.exports = {
         "@babel/plugin-syntax-dynamic-import",
         "@babel/plugin-transform-runtime",
         
-        // Class-related plugins - MUST run AFTER @babel/preset-typescript
+        // Class-related plugins - MUST run AFTER @babel/plugin-transform-typescript
         // Order is critical: class-properties -> private-methods -> private-property-in-object -> decorators
-        "@babel/plugin-transform-class-properties", // Must run AFTER TypeScript preset processes declare fields
+        "@babel/plugin-transform-class-properties", // Must run AFTER TypeScript plugin processes declare fields
         "@babel/plugin-transform-private-methods", // required for TypeScript private methods
         "@babel/plugin-transform-private-property-in-object", // required for TypeScript private fields
         
