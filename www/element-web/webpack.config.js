@@ -287,6 +287,16 @@ module.exports = (env, argv) => {
                     options: {
                         cacheDirectory: true,
                         plugins: enableMinification ? ["babel-plugin-jsx-remove-data-test-id"] : [],
+                        parserOpts: {
+                            plugins: [
+                                "typescript",
+                                "jsx",
+                                "decorators-legacy",
+                                "classProperties",
+                                "privateMethods",
+                                "privateIn",
+                            ],
+                        },
                     },
                 },
                 {
