@@ -13,6 +13,16 @@ Please see LICENSE files in the repository root for full details.
     background-color: $authpage-bg-color;
     height: 100vh;
     overflow: auto;
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 .mx_AuthPage_modal {

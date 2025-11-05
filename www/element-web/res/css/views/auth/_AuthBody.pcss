@@ -15,6 +15,7 @@ Please see LICENSE files in the repository root for full details.
     border-radius: 0 4px 4px 0;
     padding: 25px 60px;
     box-sizing: border-box;
+    animation: fadeInSlide 0.6s ease-out;
 
     strong {
         font-weight: var(--cpd-font-weight-semibold);
@@ -273,5 +274,16 @@ Please see LICENSE files in the repository root for full details.
         width: auto;
         max-width: 500px;
         padding: 10px;
+    }
+}
+
+@keyframes fadeInSlide {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }

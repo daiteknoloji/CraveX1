@@ -110,9 +110,60 @@
         margin: 8px 0 0;
     }
 
+    .mx_Parent {
+        animation: fadeIn 0.6s ease-in;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .mx_Logo {
+        animation: logoFadeIn 0.8s ease-in;
+    }
+    
+    @keyframes logoFadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+    
     .mx_ButtonSignIn {
-        background-color: #368bd6;
-        color: white !important;
+        background-color: rgba(76, 175, 80, 0.15);
+        color: #4caf50 !important;
+        border: 1px solid rgba(76, 175, 80, 0.3);
+        transition: all 0.3s ease;
+        animation: buttonFadeIn 1s ease-in;
+    }
+    
+    @keyframes buttonFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .mx_ButtonSignIn:hover {
+        background-color: rgba(76, 175, 80, 0.25);
+        border-color: rgba(76, 175, 80, 0.5);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(76, 175, 80, 0.2);
     }
 
     .mx_ButtonCreateAccount {
