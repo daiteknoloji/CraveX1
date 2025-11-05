@@ -456,10 +456,12 @@ export default class LegacyCallHandler extends TypedEventEmitter<LegacyCallHandl
                     const turnServers = MatrixClientPeg.safeGet().getTurnServers();
                     logger.error(`[ICE Debug] Available TURN servers: ${turnServers.length}`);
                     turnServers.forEach((server, index) => {
+                        // getTurnServers() returns IClientTurnServer[] which has 'urls' not 'uris'
                         logger.error(`[ICE Debug] TURN Server ${index + 1}:`, {
-                            uris: server.uris,
-                            username: server.username,
-                            credential: server.credential ? "***" : "missing",
+                            uris: (server as any).uris || (server as any).urls, // Support both formats
+                            urls: (server as any).urls, // Original format from matrix-js-sdk
+                            username: (server as any).username,
+                            credential: (server as any).credential ? "***" : "missing",
                             fullServer: server,
                         });
                     });
@@ -843,10 +845,13 @@ export default class LegacyCallHandler extends TypedEventEmitter<LegacyCallHandl
         const turnServers = cli.getTurnServers();
         logger.log("Available TURN servers:", turnServers.length);
         turnServers.forEach((server, index) => {
+            // getTurnServers() returns IClientTurnServer[] which has 'urls' not 'uris'
             logger.log(`TURN Server ${index + 1}:`, {
-                uris: server.uris,
-                username: server.username,
-                credential: server.credential ? "***" : "missing",
+                uris: (server as any).uris || (server as any).urls, // Support both formats
+                urls: (server as any).urls, // Original format from matrix-js-sdk
+                username: (server as any).username,
+                credential: (server as any).credential ? "***" : "missing",
+                fullServer: server,
             });
         });
 
