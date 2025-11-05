@@ -21,68 +21,7 @@ interface IState {
 }
 
 export default class AudioFeed extends React.Component<IProps, IState> {
-    private element = createRef<HTMLAudioElement>();
-
-    // ECMAScript # private helpers for media control
-    #stopMedia = (): void => {
-        const element = this.element.current;
-        if (!element) return;
-
-        element.pause();
-        element.srcObject = null;
-        element.removeAttribute("src");
-
-        // As per comment in componentDidMount, setting the sink ID back to the
-        // default once the call is over makes setSinkId work reliably. - Dave
-        // Since we are not using the same element anymore, the above doesn't
-        // seem to be necessary - Šimon
-    };
-
-    #playMedia = async (): Promise<void> => {
-        const element = this.element.current;
-        if (!element) return;
-
-        const stream = this.props.feed.stream ?? null;
-        if (!stream) {
-            this.#stopMedia();
-            return;
-        }
-
-        const currentStream = element.srcObject as MediaStream | null;
-
-        if (!currentStream || currentStream.id !== stream.id) {
-            element.pause();
-            element.srcObject = null;
-            element.removeAttribute("src");
-            element.srcObject = stream;
-        }
-
-        this.onAudioOutputChanged(MediaDeviceHandler.getAudioOutput());
-        element.muted = false;
-
-        element.srcObject = this.props.feed.stream ?? null;
-
-        element.autoplay = true;
-
-        try {
-            // A note on calling methods on media elements:
-            // We used to have queues per media element to serialise all calls on those elements.
-            // The reason given for this was that load() and play() were racing. However, we now
-            // never call load() explicitly so this seems unnecessary. However, serialising every
-            // operation was causing bugs where video would not resume because some play command
-            // had got stuck and all media operations were queued up behind it. If necessary, we
-            // should serialise the ones that need to be serialised but then be able to interrupt
-            // them with another load() which will cancel the pending one, but since we don't call
-            // load() explicitly, it shouldn't be a problem. - Dave
-            await element.play();
-        } catch (e) {
-            logger.info(
-                `Failed to play media element with feed for userId ` +
-                    `${this.props.feed.userId} with purpose ${this.props.feed.purpose}`,
-                e,
-            );
-        }
-    };
+    private readonly element = createRef<HTMLAudioElement>();
 
     public constructor(props: IProps) {
         super(props);
@@ -155,6 +94,63 @@ export default class AudioFeed extends React.Component<IProps, IState> {
         }
     };
 
+    async #playMedia(): Promise<void> {
+        const element = this.element.current;
+        if (!element) return;
+
+        const stream = this.props.feed.stream ?? null;
+        if (!stream) {
+            this.#stopMedia();
+            return;
+        }
+
+        const currentStream = element.srcObject as MediaStream | null;
+
+        if (!currentStream || currentStream.id !== stream.id) {
+            element.pause();
+            element.srcObject = null;
+            element.removeAttribute("src");
+            element.srcObject = stream;
+        }
+
+        this.onAudioOutputChanged(MediaDeviceHandler.getAudioOutput());
+        element.muted = false;
+
+        element.autoplay = true;
+
+        try {
+            // A note on calling methods on media elements:
+            // We used to have queues per media element to serialise all calls on those elements.
+            // The reason given for this was that load() and play() were racing. However, we now
+            // never call load() explicitly so this seems unnecessary. However, serialising every
+            // operation was causing bugs where video would not resume because some play command
+            // had got stuck and all media operations were queued up behind it. If necessary, we
+            // should serialise the ones that need to be serialised but then be able to interrupt
+            // them with another load() which will cancel the pending one, but since we don't call
+            // load() explicitly, it shouldn't be a problem. - Dave
+            await element.play();
+        } catch (e) {
+            logger.info(
+                `Failed to play media element with feed for userId ` +
+                    `${this.props.feed.userId} with purpose ${this.props.feed.purpose}`,
+                e,
+            );
+        }
+    }
+
+    #stopMedia(): void {
+        const element = this.element.current;
+        if (!element) return;
+
+        element.pause();
+        element.srcObject = null;
+        element.removeAttribute("src");
+
+        // As per comment in componentDidMount, setting the sink ID back to the
+        // default once the call is over makes setSinkId work reliably. - Dave
+        // Since we are not using the same element anymore, the above doesn't
+        // seem to be necessary - Šimon
+    }
 
     private onNewStream = (): void => {
         const audioMuted = this.props.feed.isAudioMuted();
