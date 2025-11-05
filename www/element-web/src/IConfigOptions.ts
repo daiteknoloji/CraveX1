@@ -124,6 +124,12 @@ export interface IConfigOptions {
     };
     voip?: {
         obey_asserted_identity?: boolean; // MSC3086
+        turn_servers?: Array<{
+            urls: string[];
+            username: string;
+            credential: string;
+        }>;
+        fallback_stun_server?: string;
     };
     element_call: {
         guest_spa_url?: string;
