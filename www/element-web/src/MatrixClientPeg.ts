@@ -440,6 +440,13 @@ class MatrixClientPegClass implements IMatrixClientPeg {
             });
         }
         
+        // Debug: Log iceServers from config.json
+        if (iceServers.length > 0) {
+            logger.log("[TURN Debug] Config.json iceServers:", iceServers);
+        } else {
+            logger.warn("[TURN Debug] No iceServers found in config.json!");
+        }
+        
         const opts: ICreateClientOpts = {
             baseUrl: creds.homeserverUrl,
             idBaseUrl: creds.identityServerUrl,
