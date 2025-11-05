@@ -412,6 +412,34 @@ class MatrixClientPegClass implements IMatrixClientPeg {
     }
 
     private createClient(creds: IMatrixClientCreds, tokenRefreshFunction?: TokenRefreshFunction): void {
+        // Read TURN servers from config.json
+        const voipConfig = SdkConfig.get("voip");
+        const configTurnServers = voipConfig?.turn_servers;
+        const fallbackStunServer = voipConfig?.fallback_stun_server;
+        
+        // Convert config.json turn_servers format to iceServers format (RTCIceServer[])
+        const iceServers: RTCIceServer[] = [];
+        
+        if (configTurnServers && Array.isArray(configTurnServers)) {
+            // Add TURN servers from config.json
+            configTurnServers.forEach((server) => {
+                if (server.urls && Array.isArray(server.urls)) {
+                    iceServers.push({
+                        urls: server.urls,
+                        username: server.username,
+                        credential: server.credential,
+                    });
+                }
+            });
+        }
+        
+        // Add fallback STUN server if specified
+        if (fallbackStunServer) {
+            iceServers.push({
+                urls: fallbackStunServer,
+            });
+        }
+        
         const opts: ICreateClientOpts = {
             baseUrl: creds.homeserverUrl,
             idBaseUrl: creds.identityServerUrl,
@@ -428,6 +456,8 @@ class MatrixClientPegClass implements IMatrixClientPeg {
             // ever normally need, so effectively this should make all the gathering happen when
             // the call arrives.
             iceCandidatePoolSize: 20,
+            // Use TURN servers from config.json (will override Synapse's TURN servers)
+            ...(iceServers.length > 0 && { iceServers }),
             verificationMethods: [
                 VerificationMethod.Sas,
                 VerificationMethod.ShowQrCode,
