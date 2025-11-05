@@ -18,9 +18,6 @@ module.exports = {
             {
                 allowDeclareFields: true,
                 allowNamespaces: true,
-                // allExtensions: true enables TSX parsing for all file extensions
-                allExtensions: true,
-                isTSX: true,
             },
         ],
         "@babel/preset-react",
