@@ -287,15 +287,8 @@ module.exports = (env, argv) => {
                     options: {
                         cacheDirectory: true,
                         plugins: enableMinification ? ["babel-plugin-jsx-remove-data-test-id"] : [],
-                        // CRITICAL: Parser must be explicitly configured to handle TypeScript syntax
-                        // @babel/preset-typescript handles transformation, but parser needs to be told
-                        // to parse TypeScript syntax (including private methods) BEFORE transformation
-                        parserOpts: {
-                            plugins: [
-                                "typescript",      // Enable TypeScript parsing mode - MUST be first
-                                "jsx",            // Enable JSX parsing
-                            ],
-                        },
+                        // parserOpts removed - @babel/preset-typescript in babel.config.js
+                        // now explicitly configures parser with parserOpts to handle TypeScript syntax
                     },
                 },
                 {
