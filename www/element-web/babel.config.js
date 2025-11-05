@@ -17,14 +17,19 @@ module.exports = {
                     "last 2 Safari versions",
                     "last 2 Edge versions",
                 ],
-                include: ["@babel/plugin-transform-class-properties"],
+                // REMOVED: include: ["@babel/plugin-transform-class-properties"]
+                // This is now explicitly added to plugins array below to ensure correct order
             },
         ],
         "@babel/preset-react",
     ],
     plugins: [
         // IMPORTANT: @babel/preset-typescript runs first (in presets array above)
-        // Then class-related plugins can run
+        // Then class-related plugins must run in this specific order:
+        // 1. class-properties (handles regular class fields)
+        // 2. private-methods (handles private methods)
+        // 3. private-property-in-object (handles private fields)
+        // 4. decorators (must run after all class features)
         
         "@babel/plugin-proposal-export-default-from",
         "@babel/plugin-transform-numeric-separator",
@@ -41,7 +46,9 @@ module.exports = {
         "@babel/plugin-syntax-dynamic-import",
         "@babel/plugin-transform-runtime",
         
-        // Private methods/fields must be BEFORE decorators but AFTER TypeScript preset
+        // Class-related plugins - MUST run AFTER @babel/preset-typescript
+        // Order is critical: class-properties -> private-methods -> private-property-in-object -> decorators
+        "@babel/plugin-transform-class-properties", // Must run AFTER TypeScript preset processes declare fields
         "@babel/plugin-transform-private-methods", // required for TypeScript private methods
         "@babel/plugin-transform-private-property-in-object", // required for TypeScript private fields
         
