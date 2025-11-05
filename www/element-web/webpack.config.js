@@ -287,14 +287,8 @@ module.exports = (env, argv) => {
                     options: {
                         cacheDirectory: true,
                         plugins: enableMinification ? ["babel-plugin-jsx-remove-data-test-id"] : [],
-                        parserOpts: {
-                            plugins: [
-                                "typescript",
-                                "jsx",
-                                "privateMethods",
-                                "privateIn",
-                            ],
-                        },
+                        // REMOVED parserOpts - let babel.config.js handle TypeScript parsing
+                        // The @babel/preset-typescript in babel.config.js will configure the parser correctly
                     },
                 },
                 {
