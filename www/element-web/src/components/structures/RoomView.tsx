@@ -1407,7 +1407,7 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
         }
 
         try {
-            return await crypto.isEncryptionEnabledInRoom(roomId);
+        return await crypto.isEncryptionEnabledInRoom(roomId);
         } catch (err) {
             logger.error(`Failed to check encryption status for room ${roomId}:`, err);
             return false;

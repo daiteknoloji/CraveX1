@@ -37,7 +37,10 @@ interface IRoomWidgets {
 export default class WidgetStore extends AsyncStoreWithClient<EmptyObject> {
     private static readonly internalInstance = (() => {
         const instance = new WidgetStore();
-        instance.start();
+        // Start async, don't block initialization
+        instance.start().catch((err) => {
+            logger.error("WidgetStore failed to start:", err);
+        });
         return instance;
     })();
 

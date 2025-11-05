@@ -318,6 +318,7 @@ export default class LegacyCallHandler extends TypedEventEmitter<LegacyCallHandl
         }
 
         this.addCallForRoom(mappedRoomId, call);
+        logger.log(`[ICE Debug] Setting up call listeners for call ${call.callId}, peerConn exists: ${!!call.peerConn}`);
         this.setCallListeners(call);
         // Explicitly handle first state change
         this.onCallStateChanged(call.state, null, call);
@@ -432,10 +433,13 @@ export default class LegacyCallHandler extends TypedEventEmitter<LegacyCallHandl
     private setCallListeners(call: MatrixCall): void {
         let mappedRoomId = this.roomIdForCall(call);
 
+        logger.log(`[ICE Debug] setCallListeners called for call ${call.callId}, peerConn exists: ${!!call.peerConn}`);
+
         // Debug: Monitor ICE connection state changes
         const setupIceMonitoring = () => {
             if (!call.peerConn) {
                 // Wait for peerConn to be created
+                logger.log(`[ICE Debug] peerConn not yet created for call ${call.callId}, waiting...`);
                 setTimeout(setupIceMonitoring, 100);
                 return;
             }
@@ -578,6 +582,7 @@ export default class LegacyCallHandler extends TypedEventEmitter<LegacyCallHandl
                 this.removeCallForRoom(mappedRoomId);
                 this.addCallForRoom(mappedRoomId, newCall);
             }
+            logger.log(`[ICE Debug] Setting up call listeners for replaced call ${newCall.callId}, peerConn exists: ${!!newCall.peerConn}`);
             this.setCallListeners(newCall);
             this.setCallState(newCall, newCall.state);
         });
@@ -899,6 +904,7 @@ export default class LegacyCallHandler extends TypedEventEmitter<LegacyCallHandl
             this.transferees.set(call.callId, transferee);
         }
 
+        logger.log(`[ICE Debug] Setting up call listeners for call ${call.callId}, peerConn exists: ${!!call.peerConn}`);
         this.setCallListeners(call);
 
         this.setActiveCallRoomId(roomId);

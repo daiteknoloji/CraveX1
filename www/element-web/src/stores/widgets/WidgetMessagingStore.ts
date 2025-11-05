@@ -8,6 +8,7 @@
 
 import { type ClientWidgetApi, type Widget } from "matrix-widget-api";
 import { type EmptyObject } from "matrix-js-sdk/src/matrix";
+import { logger } from "matrix-js-sdk/src/logger";
 
 import { AsyncStoreWithClient } from "../AsyncStoreWithClient";
 import defaultDispatcher from "../../dispatcher/dispatcher";
@@ -28,7 +29,10 @@ export enum WidgetMessagingStoreEvent {
 export class WidgetMessagingStore extends AsyncStoreWithClient<EmptyObject> {
     private static readonly internalInstance = (() => {
         const instance = new WidgetMessagingStore();
-        instance.start();
+        // Start async, don't block initialization
+        instance.start().catch((err) => {
+            logger.error("WidgetMessagingStore failed to start:", err);
+        });
         return instance;
     })();
 

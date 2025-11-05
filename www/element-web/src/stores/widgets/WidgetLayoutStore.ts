@@ -10,6 +10,7 @@ import { type Room, RoomStateEvent, type MatrixEvent } from "matrix-js-sdk/src/m
 import { type Optional } from "matrix-events-sdk";
 import { MapWithDefault, recursiveMapToObject } from "matrix-js-sdk/src/utils";
 import { type IWidget } from "matrix-widget-api";
+import { logger } from "matrix-js-sdk/src/logger";
 
 import SettingsStore from "../../settings/SettingsStore";
 import WidgetStore, { type IApp } from "../WidgetStore";
@@ -66,7 +67,10 @@ export class WidgetLayoutStore extends ReadyWatchingStore {
     public static get instance(): WidgetLayoutStore {
         if (!this.internalInstance) {
             this.internalInstance = new WidgetLayoutStore();
-            this.internalInstance.start();
+            // Start async, don't block initialization
+            this.internalInstance.start().catch((err) => {
+                logger.error("WidgetLayoutStore failed to start:", err);
+            });
         }
         return this.internalInstance;
     }
