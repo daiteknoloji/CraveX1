@@ -1,13 +1,7 @@
 module.exports = {
     sourceMaps: true,
     presets: [
-        [
-            "@babel/preset-typescript",
-            {
-                allowDeclareFields: true,
-                allowNamespaces: true,
-            },
-        ],
+        "@babel/preset-react",
         [
             "@babel/preset-env",
             {
@@ -22,11 +16,20 @@ module.exports = {
                 exclude: ["@babel/plugin-transform-class-properties"],
             },
         ],
-        "@babel/preset-react",
+        // IMPORTANT: Babel processes presets in REVERSE order (last to first)
+        // So TypeScript preset (LAST in array) runs FIRST
+        // This ensures TypeScript processes declare fields before any class-related plugins run
+        [
+            "@babel/preset-typescript",
+            {
+                allowDeclareFields: true,
+                allowNamespaces: true,
+            },
+        ],
     ],
     plugins: [
-        // IMPORTANT: Babel processes presets in REVERSE order
-        // So @babel/preset-typescript (first in array) runs LAST among presets
+        // IMPORTANT: Babel processes presets in REVERSE order (last to first)
+        // So @babel/preset-typescript (LAST in presets array) runs FIRST
         // This ensures TypeScript processes declare fields before plugins run
         // Then class-related plugins must run in this specific order:
         // 1. class-properties (handles regular class fields)
