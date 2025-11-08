@@ -33,12 +33,14 @@ module.exports = {
         // CRITICAL: Add TypeScript plugin explicitly BEFORE class-properties to ensure declare fields are transformed
         // Even though TypeScript preset runs first (because it's last in presets array), we need to ensure
         // that the TypeScript plugin specifically removes declare fields before class-properties plugin runs
-        // NOTE: isTSX and allExtensions are NOT valid options for the plugin - they're only for the preset
+        // NOTE: Başarılı build'de (20473d5) isTSX ve allExtensions plugin'de de vardı ve çalıştı
         [
             "@babel/plugin-transform-typescript",
             {
                 allowDeclareFields: true,
                 allowNamespaces: true,
+                isTSX: true, // ✅ Başarılı build'den kopyalandı - TSX parsing için kritik
+                allExtensions: true, // ✅ Başarılı build'den kopyalandı - isTSX:true kullanıldığında zorunlu
             },
         ],
         
@@ -53,6 +55,10 @@ module.exports = {
         // browsers support it natively), but they make our webpack version (or
         // something downstream of babel, at least) fall over.
         "@babel/plugin-transform-logical-assignment-operators",
+
+        // Throw expressions support (e.g., const x = condition ? value : throw new Error())
+        // Required for matrix-js-sdk and other dependencies using this Stage 2 proposal
+        "@babel/plugin-proposal-throw-expressions",
 
         "@babel/plugin-syntax-dynamic-import",
         "@babel/plugin-transform-runtime",
