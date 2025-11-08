@@ -1,5 +1,6 @@
 import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
 import ContactMailIcon from "@mui/icons-material/ContactMail";
+import DeleteIcon from "@mui/icons-material/Delete";
 import DevicesIcon from "@mui/icons-material/Devices";
 import GetAppIcon from "@mui/icons-material/GetApp";
 import UserIcon from "@mui/icons-material/Group";
@@ -117,6 +118,8 @@ const UserDeleteButton = (props: DeleteWithConfirmButtonProps) => {
       })}
       mutationMode="pessimistic"
       redirect={false}
+      icon={<DeleteIcon />}
+      size="small"
     />
   );
 };
