@@ -24,8 +24,8 @@ module.exports = {
             {
                 allowDeclareFields: true,
                 allowNamespaces: true,
-                isTSX: true, // ✅ TSX parsing için kritik - TypeScript private keyword'lerini parse edebilmek için
-                allExtensions: true, // ✅ isTSX:true kullanıldığında zorunlu - tüm dosya uzantılarını TypeScript olarak işle
+                isTSX: true, // ✅ TSX parsing için kritik - sadece .tsx dosyaları için JSX parsing
+                // allExtensions: true kaldırıldı - .ts dosyaları JSX olarak parse edilmemeli
             },
         ],
     ],
@@ -38,8 +38,7 @@ module.exports = {
             {
                 allowDeclareFields: true,
                 allowNamespaces: true,
-                isTSX: true, // ✅ TSX parsing için kritik
-                allExtensions: true, // ✅ isTSX:true kullanıldığında zorunlu
+                // isTSX ve allExtensions plugin'de desteklenmiyor - sadece preset'te kullanılmalı
             },
         ],
         
