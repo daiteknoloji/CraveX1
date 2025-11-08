@@ -23,7 +23,7 @@
     "default_theme": "dark",
     "brand": "CraveX",
     "room_directory": {
-        "servers": ["cravex1-production.up.railway.app"]
+        "servers": ["matrix-synapse-production.up.railway.app"]
     },
     "jitsi": {
         "preferred_domain": "meet.jit.si"
