@@ -122,6 +122,11 @@ export const UserList = (props: ListProps) => (
       <BooleanField source="locked" />
       <BooleanField source="erased" sortable={false} />
       <DateField source="creation_ts" label="resources.users.fields.creation_ts_ms" showTime options={DATE_FORMAT} />
+      <DeleteButton
+        label="resources.users.action.erase"
+        confirmTitle="resources.users.helper.erase"
+        mutationMode="pessimistic"
+      />
     </Datagrid>
   </List>
 );
