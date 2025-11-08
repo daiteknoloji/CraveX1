@@ -47,3 +47,4 @@ Test-NetConnection -ComputerName turn-server-production-2809.up.railway.app -Por
 - Test başarılı → Değişiklik gerekmez ✅
 - Test başarısız → TCP Proxy ekle ⚠️
 
+

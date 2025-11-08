@@ -54,3 +54,4 @@ Video call Metered.ca TURN server ile çalışmalı. Railway TURN server denenme
 - `www/element-web/src/LegacyCallHandler.tsx` - ICE debug logging
 - `turnserver.conf` - TURN server config (Railway'de çalışmıyor)
 
+
